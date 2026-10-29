@@ -10,23 +10,24 @@ It starts with two devices, an LG webOS TV and a Freebox router (Pop). Planned f
 - **One binary, web page embedded** with `embed`. No separate frontend build, no nginx. A plain HTML/JS page calls the binary's JSON API.
 - **Stdlib first.** `net/http` with Go 1.22+ method routing, `embed`, `encoding/json`, `crypto/hmac`. Add a dependency only where the stdlib has nothing: a WebSocket client (for the LG) and maybe QR generation. Each new dependency needs a reason.
 - **Only the devices we have.** No plugin system or device interfaces until a second TV brand or router actually shows up.
-- **Password from day one.** Anyone on the Wi-Fi, guests included, can reach the dashboard.
+- **Login from day one.** Anyone on the Wi-Fi, guests included, can reach the dashboard. `canape serve` prints a link with a random key; opening it once moves the key into an HttpOnly, SameSite=Strict cookie. No password to type on a phone. Delete `dashboard.key` from the state file to log every device out.
 - **Docker is packaging, not the runtime.** It ships later as a thin wrapper around the binary and needs `network_mode: host` (for WoL broadcasts and discovery). On a Mac, develop with `go run .`, because Docker Desktop host networking is unreliable.
 - **MCP comes later**, as a second interface in the same binary that calls the same functions as the HTTP handlers.
 
 ## Layout
 
 ```
-main.go          entry point and state file. Will grow the HTTP server, routes, auth, embedded web/
+main.go          entry point, usage, state file
 tv.go            `canape tv ...` CLI commands
+server.go        `canape serve`: login, JSON API under /api/tv, embeds web/index.html
+web/index.html   dashboard, one file, no build step
+lgtv/            LG webOS client. Named methods (TurnOff, SetVolume, Launch...) are what the CLI and server call.
 lgtv/register.json  pairing payload (from PyWebOSTV). The signature covers the "signed" block, so edit neither.
 cmd/scan/        network scanner: `go run ./cmd/scan` lists devices, IPs, MACs, models, open ports. Ask the user to run it instead of asking them for device details.
-lgtv/            LG webOS client
-freebox/         Freebox OS API client
-web/index.html   dashboard
+freebox/         Freebox OS API client (not yet)
 ```
 
-State lives in `state.json` inside `CANAPE_DATA`, or by default the OS user config dir (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), so the CLI works from any directory. Docker will set `CANAPE_DATA=/data`. The file holds the TV client-key, and later the Freebox app_token and the password hash. Write it with mode 0600 and never log tokens.
+State lives in `state.json` inside `CANAPE_DATA`, or by default the OS user config dir (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), so the CLI works from any directory. Docker will set `CANAPE_DATA=/data`. The file holds the TV client-key, the dashboard login key, and later the Freebox app_token. Write it with mode 0600 and never log tokens.
 
 The CLI is the test bench: each feature lands as a `canape tv ...` command first, and the web page calls the same functions later.
 
@@ -61,7 +62,7 @@ Build one small step at a time. Each step should be easy to follow and explain o
 
 - [x] LG: pair, store the client-key, toast, off, on (Wake-on-LAN), volume, raw `call`. Tested on the dev TV.
 - [x] LG: input switch, launch app, open URL. Tested on the dev TV.
-- [ ] HTTP server + `web/index.html` with TV controls, plus a password login
+- [x] HTTP server + `web/index.html` with TV controls, plus a login link. Works on a phone. Home/Back keys work (`Button`, second socket).
 - [ ] Freebox: authorize, session, list connected devices
 - [ ] Freebox: create a guest key, show its QR on the phone or send it to the TV (`system.launcher/open`)
 - [ ] Packaging: install script (systemd and launchd), Dockerfile, compose with host networking

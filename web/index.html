@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="canape">
+<meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f1e8" media="(prefers-color-scheme: light)">
+<title>canape</title>
+<style>
+  :root {
+    --bg: #f6f1e8; --surface: #fffdf9; --line: #e6dccb; --text: #2a241c;
+    --muted: #8a7d6b; --accent: #b8691c; --accent-text: #fff; --danger: #b3412e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16130f; --surface: #221d17; --line: #332b22; --text: #f3ece2;
+      --muted: #9c8f7d; --accent: #e8a24a; --accent-text: #1b150e; --danger: #e0715c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  main, header { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: 12px;
+  }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 28px 0 10px; }
+  .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
+  .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status.on i { background: #5fb36b; }
+  button {
+    font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; min-height: 48px; padding: 0 16px; cursor: pointer;
+    transition: transform 80ms ease, background 120ms ease;
+  }
+  button:active { transform: scale(0.97); }
+  button[aria-current="true"], button[aria-pressed="true"] {
+    background: var(--accent); color: var(--accent-text); border-color: var(--accent);
+  }
+  button:disabled { opacity: 0.5; }
+  .power { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; font-weight: 600; }
+  .power svg { width: 22px; height: 22px; }
+  #power-on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .controls { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 8px; }
+  #power-off { width: 56px; min-height: 56px; padding: 0; color: var(--danger); }
+  .volume { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
+  .volume button { border: 0; min-width: 48px; font-size: 22px; }
+  .volume output { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; min-width: 3ch; text-align: center; }
+  #mute { min-height: 56px; }
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .keys button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; }
+  .keys svg { width: 20px; height: 20px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding-bottom: 32px; }
+  .grid button { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hint { color: var(--muted); text-align: center; margin-top: 16px; }
+  code { font-size: 0.9em; }
+  #toast {
+    position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom));
+    max-width: 448px; margin: 0 auto; padding: 12px 16px; border-radius: 12px;
+    background: var(--text); color: var(--bg); font-size: 14px;
+    opacity: 0; transform: translateY(8px); transition: opacity 200ms, transform 200ms; pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>canape</h1>
+  <span id="status" class="status"><i></i><span>Connecting…</span></span>
+</header>
+<main>
+  <section id="login" hidden>
+    <p class="hint">This device isn't logged in. Open the link that <code>canape serve</code> printed in your terminal.</p>
+  </section>
+
+  <section id="off" hidden>
+    <button id="power-on" class="power">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+      <span>Turn TV on</span>
+    </button>
+    <p class="hint" id="off-hint">The TV is off or unreachable.</p>
+  </section>
+
+  <section id="tv" hidden>
+    <div class="controls">
+      <button id="power-off" aria-label="Turn TV off">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
+      </button>
+      <div class="volume">
+        <button id="vol-down" aria-label="Volume down">−</button>
+        <output id="vol">–</output>
+        <button id="vol-up" aria-label="Volume up">+</button>
+      </div>
+      <button id="mute" aria-pressed="false">Mute</button>
+    </div>
+    <div class="keys">
+      <button data-key="HOME">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>
+        Home
+      </button>
+      <button data-key="BACK">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l-6 6 6 6M4 12h16"/></svg>
+        Back
+      </button>
+    </div>
+    <h2>Inputs</h2>
+    <div id="inputs" class="chips"></div>
+    <h2>Apps</h2>
+    <div id="apps" class="grid"></div>
+  </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let tv = null;
+
+async function api(path, body) {
+  const opts = body === undefined ? {} :
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const res = await fetch(path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { show("login"); throw new Error("login"); }
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+
+function show(id) {
+  for (const s of ["login", "off", "tv"]) $("#" + s).hidden = s !== id;
+  const on = id === "tv";
+  $("#status").classList.toggle("on", on);
+  $("#status span").textContent = { login: "Logged out", off: "TV off", tv: "TV on" }[id];
+}
+
+let toastTimer;
+function notify(msg) {
+  $("#toast").textContent = msg;
+  $("#toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 3500);
+}
+
+async function refresh() {
+  try {
+    tv = await api("/api/tv");
+    render();
+  } catch (e) {
+    if (e.message !== "login") notify(e.message);
+  }
+}
+
+function buttons(container, items, current, onPick) {
+  container.replaceChildren(...items.map((it) => {
+    const b = document.createElement("button");
+    b.textContent = it.label;
+    b.setAttribute("aria-current", String(it.appId === current));
+    b.onclick = () => onPick(it);
+    return b;
+  }));
+}
+
+function render() {
+  if (!tv.on) { show("off"); return; }
+  show("tv");
+  $("#vol").textContent = tv.volume;
+  $("#mute").setAttribute("aria-pressed", String(tv.muted));
+  buttons($("#inputs"), tv.inputs.map((i) => ({ id: i.id, label: i.label, appId: i.appId })), tv.current,
+    (i) => act("/api/tv/input", { id: i.id }));
+  buttons($("#apps"), tv.apps.map((a) => ({ id: a.id, label: a.title, appId: a.id })), tv.current,
+    (a) => act("/api/tv/app", { id: a.id }));
+}
+
+async function act(path, body) {
+  try { await api(path, body); } catch (e) { if (e.message !== "login") notify(e.message); }
+  refresh();
+}
+
+// Taps change the number right away; the TV gets the final value once tapping pauses.
+let volTimer;
+function changeVolume(delta) {
+  tv.volume = Math.max(0, Math.min(100, tv.volume + delta));
+  $("#vol").textContent = tv.volume;
+  clearTimeout(volTimer);
+  volTimer = setTimeout(() => api("/api/tv/volume", { volume: tv.volume }).catch((e) => notify(e.message)), 250);
+}
+
+$("#vol-up").onclick = () => changeVolume(1);
+$("#vol-down").onclick = () => changeVolume(-1);
+$("#mute").onclick = () => act("/api/tv/mute", { mute: !tv.muted });
+for (const b of document.querySelectorAll("[data-key]")) {
+  b.onclick = () => act("/api/tv/button", { name: b.dataset.key });
+}
+$("#power-off").onclick =() => act("/api/tv/power", { on: false });
+
+$("#power-on").onclick = async () => {
+  const btn = $("#power-on");
+  btn.disabled = true;
+  $("#off-hint").textContent = "Turning on…";
+  try {
+    await api("/api/tv/power", { on: true });
+    // The TV takes a few seconds to boot its network.
+    for (let i = 0; i < 10 && !(tv && tv.on); i++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      await refresh();
+    }
+    if (!tv.on) notify('The TV did not answer. Check "Turn on via Wi-Fi" in its settings.');
+  } catch (e) {
+    if (e.message !== "login") notify(e.message);
+  }
+  btn.disabled = false;
+  $("#off-hint").textContent = "The TV is off or unreachable.";
+};
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+refresh();
+</script>
+</body>
+</html>

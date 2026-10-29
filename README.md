@@ -4,7 +4,7 @@ Control your home from the couch. canape is a small self-hosted control center: 
 
 It starts with an **LG webOS TV** and a **Freebox** router. More devices may come later.
 
-> Status: early. The network scanner and the TV commands work (tested on a 2019 LG). There's no dashboard yet. The plan is in [AGENTS.md](AGENTS.md#plan).
+> Status: early. The network scanner and the TV commands work (tested on a 2019 LG). The first dashboard is in, with TV controls only. The plan is in [AGENTS.md](AGENTS.md#plan).
 
 ## What it will do
 
@@ -42,7 +42,19 @@ For access from outside your home, install [Tailscale](https://tailscale.com) on
 
 ## Run it
 
-The TV part works from the terminal today. The dashboard comes next.
+### Dashboard
+
+Pair the TV first (`canape tv pair`, below), then:
+
+```bash
+make serve        # or: canape serve [addr], default :8080
+```
+
+canape prints a link like `http://192.168.1.10:8080/?key=…`. Open it once on each of your devices: it logs that device in with a cookie and drops the key from the address bar. Only open it on your own devices. To log everyone out, delete the `dashboard` key from `state.json` and restart.
+
+On iPhone, Share → Add to Home Screen makes it feel like an app.
+
+### Terminal
 
 ```bash
 go install .                         # or prefix each command with: go run .
@@ -52,6 +64,7 @@ canape tv volume 15
 canape tv input                      # list inputs; canape tv input hdmi1 switches
 canape tv app                        # list apps; canape tv app youtube launches it
 canape tv open https://example.com   # opens the TV's browser
+canape tv button home                # remote keys: home, back, up, down, left, right, enter
 canape tv off
 canape tv on
 canape tv call audio/getVolume       # any SSAP request, prints the reply
@@ -59,9 +72,9 @@ canape tv call audio/getVolume       # any SSAP request, prints the reply
 
 Run `canape` with no arguments for the full list.
 
-State (TV key, and later the Freebox token and dashboard password) lives in `state.json` in your user config folder (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), or wherever `CANAPE_DATA` points. Keep it private.
+State (TV key, dashboard login key, and later the Freebox token) lives in `state.json` in your user config folder (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), or wherever `CANAPE_DATA` points. Keep it private.
 
-Later, the dashboard will run with `canape` on a Pi or with `docker compose up -d` (host networking), served at `http://<machine-ip>:8080`.
+Later, a Pi install script and `docker compose up -d` (host networking) will run the dashboard permanently.
 
 ## Fewer ads on the LG home screen
 
