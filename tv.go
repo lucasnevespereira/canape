@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -20,6 +22,8 @@ func tvCommand(cmd string, args []string) error {
 	switch cmd {
 	case "pair":
 		return pair(s)
+	case "install-app":
+		return tvInstallApp(s)
 	case "on":
 		if s.TV.MAC == "" {
 			return errors.New("no MAC address saved for the TV. Run: canape tv pair (with the TV on)")
@@ -66,6 +70,13 @@ func tvCommand(cmd string, args []string) error {
 			return errors.New("usage: canape tv button <home|back|up|down|left|right|enter>")
 		}
 		err = tv.Button(args[0])
+	case "type":
+		text := strings.Join(args, " ")
+		if text == "" {
+			// Prompting keeps passwords out of the shell history.
+			text = prompt(bufio.NewReader(os.Stdin), "Text to type on the TV", "")
+		}
+		err = tv.Type(text)
 	case "input":
 		err = tvInput(tv, args)
 	case "app":

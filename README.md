@@ -9,7 +9,7 @@ It starts with an **LG webOS TV** and a **Freebox** router. More devices may com
 ## What it will do
 
 - **TV:** power on/off, volume, switch inputs (HDMI, Apple TV), launch apps, open a web page on the TV, show on-screen notifications
-- **Guest Wi-Fi:** create a temporary Freebox guest key and show it as a QR code on your phone or on the TV. Guests scan it and join. The key expires on its own, and your real password never appears on screen.
+- **Wi-Fi QR code:** show your Wi-Fi as a QR code on your phone or on the TV. Guests scan it and join. canape reads the network name from the Freebox and never changes your Wi-Fi settings.
 - **Network:** see which devices are online right now
 - **Ask Claude:** later, an MCP interface so you can say "show guest wifi on the TV" or "turn everything off"
 
@@ -37,8 +37,8 @@ For access from outside your home, install [Tailscale](https://tailscale.com) on
 
 ### Freebox
 
-1. **Authorize canape once.** On first start, canape asks the Freebox for access, and you approve the request on the box.
-2. **Grant permissions** in Freebox OS (http://mafreebox.freebox.fr) → Paramètres de la Freebox → Gestion des accès → Applications. Creating guest Wi-Fi keys needs "Modification des réglages de la Freebox".
+1. **Authorize canape once** with `canape freebox pair`. The box shows the request on its small screen: use its arrows to pick "Oui" and confirm. On a Pop, the screen may stay on "Authentification en cours" afterwards; that's a known display bug and pairing still works.
+2. **No extra permission needed.** canape only reads from the box. Leave "Modification des réglages de la Freebox" unticked for canape in Freebox OS (Paramètres de la Freebox → Gestion des accès → Applications).
 
 ## Run it
 
@@ -65,16 +65,42 @@ canape tv input                      # list inputs; canape tv input hdmi1 switch
 canape tv app                        # list apps; canape tv app youtube launches it
 canape tv open https://example.com   # opens the TV's browser
 canape tv button home                # remote keys: home, back, up, down, left, right, enter
+canape tv type                       # type into the focused field on the TV (asks for the text)
 canape tv off
 canape tv on
 canape tv call audio/getVolume       # any SSAP request, prints the reply
+canape freebox pair                  # confirm on the Freebox screen
+canape freebox devices               # who's online; add "all" for every device seen
+canape wifi set                      # save the Wi-Fi password once (name comes from the Freebox)
+canape wifi                          # Wi-Fi QR code in the terminal
 ```
 
 Run `canape` with no arguments for the full list.
 
-State (TV key, dashboard login key, and later the Freebox token) lives in `state.json` in your user config folder (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), or wherever `CANAPE_DATA` points. Keep it private.
+State (TV key, dashboard login key, Freebox token, Wi-Fi name and password) lives in `state.json` in your user config folder (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), or wherever `CANAPE_DATA` points. Keep it private.
 
 Later, a Pi install script and `docker compose up -d` (host networking) will run the dashboard permanently.
+
+## Wi-Fi app on the TV
+
+A "Wi-Fi" tile in the TV's app bar that shows the QR code, even when canape isn't running. It's a small webOS app with your Wi-Fi baked in, installed through LG's Developer Mode.
+
+One-time setup on the TV (LG requires it; canape can't do it for you):
+
+1. Create a free account at [webostv.developer.lge.com](https://webostv.developer.lge.com).
+2. On the TV, open the **Developer Mode** app (install it from the LG Content Store if needed), sign in, turn on **Dev Mode Status**, and let the TV restart.
+3. Open Developer Mode again and turn on **Key Server**.
+
+Then on your computer:
+
+```bash
+npm install -g @webos-tools/cli     # LG's CLI, once
+canape tv install-app
+```
+
+canape already knows the TV's address, so the only question is the passphrase shown in Developer Mode, and only the first time. Run `canape tv install-app` again whenever you change the Wi-Fi password.
+
+Developer Mode only lasts a limited time. The app shows a countdown: press **Extend** before it runs out, or the TV removes apps installed this way.
 
 ## Fewer ads on the LG home screen
 

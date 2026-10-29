@@ -23,8 +23,17 @@ const usage = `canape controls your TV from the couch.
   canape tv app [name]         list apps, or launch one (e.g. youtube)
   canape tv open <url>         open a web page on the TV
   canape tv button <key>       press a remote key: home, back, up, down, left, right, enter
+  canape tv type [text]        type into the focused text field (prompts if no text)
+  canape tv install-app        install a Wi-Fi QR app on the TV (needs Developer Mode)
   canape tv call <uri> [json]  send any SSAP request and print the reply,
                                e.g. canape tv call audio/getVolume
+
+  canape wifi set              save the Wi-Fi name and password (name comes from the Freebox)
+  canape wifi                  show the Wi-Fi QR code in the terminal
+  canape wifi tvapp [dir]      write the TV app files only (install-app does it all)
+
+  canape freebox pair         authorize canape on the Freebox (confirm on its screen)
+  canape freebox devices [all] devices online now, or every device seen
 
 State is kept in %s (set CANAPE_DATA to move it).
 `
@@ -41,6 +50,10 @@ func main() {
 		err = serve(addr)
 	case len(args) >= 2 && args[0] == "tv":
 		err = tvCommand(args[1], args[2:])
+	case len(args) >= 1 && args[0] == "wifi":
+		err = wifiCommand(args[1:])
+	case len(args) >= 2 && args[0] == "freebox":
+		err = freeboxCommand(args[1], args[2:])
 	default:
 		fmt.Printf(usage, statePath())
 		os.Exit(2)
@@ -57,6 +70,13 @@ type state struct {
 		MAC string `json:"mac"`
 		Key string `json:"key"`
 	} `json:"tv"`
+	Wifi struct {
+		SSID     string `json:"ssid"`
+		Password string `json:"password"`
+	} `json:"wifi"`
+	Freebox struct {
+		AppToken string `json:"app_token"`
+	} `json:"freebox"`
 	Dashboard struct {
 		Key string `json:"key"` // in the login link; a device that opened it once keeps it as a cookie
 	} `json:"dashboard"`

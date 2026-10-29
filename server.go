@@ -25,8 +25,9 @@ type server struct {
 	// ponytail: one lock for every TV request. It keeps one socket open at a
 	// time and guards the state file, which connect may rewrite. Fine for a
 	// household; split it if requests ever queue up.
-	mu    sync.Mutex
-	state *state
+	mu      sync.Mutex
+	state   *state
+	baseURL string // how the TV reaches this server
 }
 
 func serve(addr string) error {
@@ -42,10 +43,26 @@ func serve(addr string) error {
 			return err
 		}
 	}
-	sv := &server{state: s}
+	port := addr[strings.LastIndex(addr, ":")+1:]
+	sv := &server{state: s, baseURL: "http://" + localIP() + ":" + port}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", sv.index)
+	// The Wi-Fi page is public: the TV's browser has no login cookie, and
+	// anyone who can reach this server is already on the Wi-Fi.
+	mux.HandleFunc("GET /wifi", wifiHandler)
+	mux.HandleFunc("GET /wifi.svg", wifiSVGHandler)
+	mux.HandleFunc("GET /api/wifi", sv.auth(func(w http.ResponseWriter, r *http.Request) {
+		s, err := loadState()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, map[string]string{"ssid": s.Wifi.SSID})
+	}))
+	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(tv *lgtv.TV, _ struct{}) error {
+		return tv.Open(sv.baseURL + "/wifi")
+	})))
 	mux.HandleFunc("GET /api/tv", sv.auth(sv.tvStatus))
 	mux.HandleFunc("POST /api/tv/power", sv.auth(sv.tvPower))
 	mux.HandleFunc("POST /api/tv/volume", sv.auth(tvHandler(sv, func(tv *lgtv.TV, r struct {
@@ -68,14 +85,18 @@ func serve(addr string) error {
 	}) error {
 		return tv.Button(r.Name)
 	})))
+	mux.HandleFunc("POST /api/tv/type", sv.auth(tvHandler(sv, func(tv *lgtv.TV, r struct {
+		Text string `json:"text"`
+	}) error {
+		return tv.Type(r.Text)
+	})))
 	mux.HandleFunc("POST /api/tv/app", sv.auth(tvHandler(sv, func(tv *lgtv.TV, r struct {
 		ID string `json:"id"`
 	}) error {
 		return tv.Launch(r.ID)
 	})))
 
-	port := addr[strings.LastIndex(addr, ":")+1:]
-	fmt.Printf("canape is running. Open this link once on each of your devices (same Wi-Fi):\n\n  http://%s:%s/?key=%s\n\n", localIP(), port, s.Dashboard.Key)
+	fmt.Printf("canape is running. Open this link once on each of your devices (same Wi-Fi):\n\n  %s/?key=%s\n\n", sv.baseURL, s.Dashboard.Key)
 	fmt.Println("It logs the device in, so only open it on your own. Ctrl+C to stop.")
 	return http.ListenAndServe(addr, mux)
 }
@@ -101,6 +122,36 @@ func (sv *server) index(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(indexHTML)
+}
+
+// The Wi-Fi handlers re-read the state file, so `canape wifi set` shows up
+// without restarting the server.
+func wifiHandler(w http.ResponseWriter, r *http.Request) {
+	s, err := loadState()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := renderWifiPage(w, s.Wifi.SSID, s.Wifi.Password); err != nil {
+		log.Print(err)
+	}
+}
+
+func wifiSVGHandler(w http.ResponseWriter, r *http.Request) {
+	s, err := loadState()
+	if err != nil || s.Wifi.SSID == "" {
+		http.NotFound(w, r)
+		return
+	}
+	svg, err := qrSVG(wifiQRText(s.Wifi.SSID, s.Wifi.Password))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Cache-Control", "no-store")
+	io.WriteString(w, svg)
 }
 
 func (sv *server) validKey(k string) bool {

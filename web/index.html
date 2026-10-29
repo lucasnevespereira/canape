@@ -54,11 +54,24 @@
   .volume button { border: 0; min-width: 48px; font-size: 22px; }
   .volume output { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; min-width: 3ch; text-align: center; }
   #mute { min-height: 56px; }
-  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .keys { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .type { display: flex; gap: 10px; margin-top: 10px; }
+  .type input {
+    flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; font: inherit; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  }
+  .type input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .note { margin: 6px 2px 0; font-size: 13px; color: var(--muted); }
   .keys button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; }
   .keys svg { width: 20px; height: 20px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; padding-bottom: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  #wifi { padding-bottom: 32px; }
+  .wifi { display: flex; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+  .wifi img { width: 112px; height: 112px; display: block; border-radius: 8px; }
+  .wifi > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+  .ssid { margin: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link { color: var(--accent); font-size: 14px; }
   .grid button { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .hint { color: var(--muted); text-align: center; margin-top: 16px; }
   code { font-size: 0.9em; }
@@ -110,11 +123,30 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l-6 6 6 6M4 12h16"/></svg>
         Back
       </button>
+      <button data-key="ENTER">OK</button>
     </div>
+    <form class="type" id="type-form">
+      <input id="type-text" placeholder="Type on the TV" aria-label="Text to type on the TV"
+        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+      <button type="submit">Send</button>
+    </form>
+    <p class="note">Select a text field on the TV first.</p>
     <h2>Inputs</h2>
     <div id="inputs" class="chips"></div>
     <h2>Apps</h2>
     <div id="apps" class="grid"></div>
+  </section>
+
+  <section id="wifi" hidden>
+    <h2>Wi-Fi</h2>
+    <div class="wifi">
+      <a href="/wifi" aria-label="Open the Wi-Fi QR code full screen"><img src="/wifi.svg" alt="Wi-Fi QR code"></a>
+      <div>
+        <p class="ssid" id="ssid"></p>
+        <button id="wifi-tv">Show on TV</button>
+        <a class="link" href="/wifi">Full screen</a>
+      </div>
+    </div>
   </section>
 </main>
 <div id="toast" role="status"></div>
@@ -133,8 +165,12 @@ async function api(path, body) {
   return data;
 }
 
+let ssid = "";
+
 function show(id) {
   for (const s of ["login", "off", "tv"]) $("#" + s).hidden = s !== id;
+  $("#wifi").hidden = id === "login" || !ssid;
+  $("#wifi-tv").disabled = id !== "tv";
   const on = id === "tv";
   $("#status").classList.toggle("on", on);
   $("#status span").textContent = { login: "Logged out", off: "TV off", tv: "TV on" }[id];
@@ -219,8 +255,21 @@ $("#power-on").onclick = async () => {
   $("#off-hint").textContent = "The TV is off or unreachable.";
 };
 
+$("#type-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const text = $("#type-text").value;
+  if (!text) return;
+  try {
+    await api("/api/tv/type", { text });
+    $("#type-text").value = "";
+  } catch (err) {
+    if (err.message !== "login") notify(err.message);
+  }
+};
+$("#wifi-tv").onclick =() => act("/api/wifi/tv", {});
+
 document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
-refresh();
+api("/api/wifi").then((w) => { ssid = w.ssid; $("#ssid").textContent = ssid; }).catch(() => {}).finally(refresh);
 </script>
 </body>
 </html>
