@@ -1,39 +1,32 @@
-package main
+package cli
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/lucasnevespereira/canape/freebox"
+	"github.com/lucasnevespereira/canape/internal/home"
+	"github.com/lucasnevespereira/canape/internal/router/freebox"
+	"github.com/lucasnevespereira/canape/internal/store"
 )
 
 func freeboxCommand(cmd string, args []string) error {
-	s, err := loadState()
-	if err != nil {
-		return err
-	}
-	if cmd == "pair" {
-		return freeboxPair(s)
-	}
-	if s.Freebox.AppToken == "" {
-		return errors.New("not paired with the Freebox yet. Run: canape freebox pair")
-	}
-	fbx, err := freebox.New(s.Freebox.AppToken)
+	s, err := store.Load()
 	if err != nil {
 		return err
 	}
 	switch cmd {
+	case "pair":
+		return freeboxPair(s)
 	case "devices":
-		return freeboxDevices(fbx, len(args) > 0 && args[0] == "all")
+		return devices(s, len(args) > 0 && args[0] == "all")
 	default:
 		return fmt.Errorf("unknown command %q. Run canape without arguments for help", cmd)
 	}
 }
 
-func freeboxPair(s *state) error {
+func freeboxPair(s *store.State) error {
 	device, _ := os.Hostname()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -44,32 +37,16 @@ func freeboxPair(s *state) error {
 		return err
 	}
 	s.Freebox.AppToken = token
-	if err := saveState(s); err != nil {
+	if err := s.Save(); err != nil {
 		return err
 	}
-	fmt.Println("Paired. Saved to", statePath())
-
-	fbx, err := freebox.New(token)
-	if err != nil {
-		return err
-	}
-	if err := fbx.Login(); err != nil {
-		return err
-	}
-	if !fbx.Perms["settings"] {
-		fmt.Print(`
-One more step for guest Wi-Fi: canape needs permission to change settings.
-  1. Open http://mafreebox.freebox.fr and log in
-  2. Paramètres de la Freebox > Gestion des accès > Applications
-  3. Edit "canape" and tick "Modification des réglages de la Freebox"
-`)
-	}
+	fmt.Println("Paired. Saved to", store.Path())
 	fmt.Println("Try: canape freebox devices")
 	return nil
 }
 
-func freeboxDevices(fbx *freebox.Client, all bool) error {
-	hosts, err := fbx.Hosts()
+func devices(s *store.State, all bool) error {
+	hosts, err := home.Devices(s, true)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,6 @@
-// Command scan lists the devices on the local network and prints what canape
-// needs to know about them: IPs, MACs, models and which control ports answer.
-//
-//	go run ./cmd/scan
-package main
+// Package discovery finds what's on the local network: SSDP and mDNS
+// announcements, the ARP table, reverse DNS names and a few control ports.
+package discovery
 
 import (
 	"bufio"
@@ -13,7 +11,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"os/exec"
 	"regexp"
 	"sort"
@@ -24,68 +21,92 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
-type device struct {
-	ip       string
-	mac      string
-	host     string // reverse DNS
-	name     string // SSDP friendly name
-	alias    string // mDNS instance name
-	model    string // SSDP manufacturer + model
-	hw       string // mDNS model, e.g. AppleTV11,1
-	server   string // SSDP Server header, often carries the OS version
-	services map[string]bool
-	open     []int
+type Device struct {
+	IP, MAC  string
+	Host     string // reverse DNS
+	Name     string // SSDP friendly name
+	Alias    string // mDNS instance name
+	Model    string // SSDP manufacturer + model
+	HW       string // mDNS model, e.g. AppleTV11,1
+	Server   string // SSDP Server header, often carries the OS version
+	Self     bool   // the machine running the scan
+	Services map[string]bool
+	Open     []int // control ports that answered, see PortLabel
 }
 
-var (
+// Freebox is what the box says about itself without authentication.
+type Freebox struct {
+	Model   string // e.g. "Freebox v8 (r1)"
+	Nick    string // e.g. "Pop", empty when unknown
+	Version string // API version, e.g. "16.1"
+	BaseURL string // e.g. http://mafreebox.freebox.fr/api/v16/
+}
+
+type Result struct {
+	LocalIP string
+	Freebox *Freebox  // nil when there's no Freebox
+	Devices []*Device // sorted by IP
+}
+
+// LocalIP returns this machine's LAN address. Dialing UDP sends nothing; it
+// only picks the outgoing interface.
+func LocalIP() string {
+	c, err := net.Dial("udp", "192.0.2.1:9")
+	if err != nil {
+		return "localhost"
+	}
+	defer c.Close()
+	return c.LocalAddr().(*net.UDPAddr).IP.String()
+}
+
+type scanner struct {
 	mu      sync.Mutex
-	devices = map[string]*device{}
+	devices map[string]*Device
 	localIP string
 	// ponytail: assumes a /24, which is what home routers hand out. Read the netmask if that ever breaks.
 	subnet string
-)
-
-// get must be called with mu held.
-func get(ip string) *device {
-	d := devices[ip]
-	if d == nil {
-		d = &device{ip: ip, services: map[string]bool{}}
-		devices[ip] = d
-	}
-	return d
 }
 
-func main() {
-	c, err := net.Dial("udp", "192.0.2.1:9") // UDP dial sends nothing, it only picks the outgoing interface
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "no network:", err)
-		os.Exit(1)
+// Scan takes a few seconds: it waits for announcements to come back.
+func Scan() (*Result, error) {
+	local := LocalIP()
+	if local == "localhost" {
+		return nil, fmt.Errorf("no network connection")
 	}
-	localIP = c.LocalAddr().(*net.UDPAddr).IP.String()
-	c.Close()
-	subnet = localIP[:strings.LastIndex(localIP, ".")+1]
-
-	fmt.Println("canape scan (takes a few seconds)")
-	fmt.Printf("\nThis machine   %s\n", localIP)
-	freebox()
+	s := &scanner{devices: map[string]*Device{}, localIP: local, subnet: local[:strings.LastIndex(local, ".")+1]}
+	res := &Result{LocalIP: local, Freebox: probeFreebox()}
 
 	var wg sync.WaitGroup
-	for _, f := range []func(){sweep, ssdp, mdns} {
+	for _, f := range []func(){s.sweep, s.ssdp, s.mdns} {
 		wg.Add(1)
 		go func() { defer wg.Done(); f() }()
 	}
 	wg.Wait()
-	arp()
-	enrich()
-	report()
+	s.arp()
+	s.enrich()
+
+	for _, d := range s.devices {
+		res.Devices = append(res.Devices, d)
+	}
+	sort.Slice(res.Devices, func(i, j int) bool { return ipNum(res.Devices[i].IP) < ipNum(res.Devices[j].IP) })
+	return res, nil
 }
 
-func freebox() {
+// get must be called with mu held.
+func (s *scanner) get(ip string) *Device {
+	d := s.devices[ip]
+	if d == nil {
+		d = &Device{IP: ip, Self: ip == s.localIP, Services: map[string]bool{}}
+		s.devices[ip] = d
+	}
+	return d
+}
+
+func probeFreebox() *Freebox {
 	c := http.Client{Timeout: 3 * time.Second}
 	resp, err := c.Get("http://mafreebox.freebox.fr/api_version")
 	if err != nil {
-		fmt.Println("Freebox        not found")
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 	var v struct {
@@ -93,27 +114,26 @@ func freebox() {
 		Base    string `json:"api_base_url"`
 		Version string `json:"api_version"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
-		fmt.Println("Freebox        unexpected api_version reply:", err)
-		return
+	if json.NewDecoder(resp.Body).Decode(&v) != nil || v.Version == "" {
+		return nil
 	}
-	nick := ""
+	f := &Freebox{Model: v.Model, Version: v.Version}
 	for gen, n := range map[string]string{"v6": "Revolution", "v7": "Delta", "v8": "Pop"} {
 		if strings.Contains(v.Model, "Freebox "+gen) {
-			nick = " (" + n + ")"
+			f.Nick = n
 		}
 	}
 	major, _, _ := strings.Cut(v.Version, ".")
-	fmt.Printf("Freebox        %s%s, API %s\n", v.Model, nick, v.Version)
-	fmt.Printf("               http://mafreebox.freebox.fr%sv%s/\n", v.Base, major)
+	f.BaseURL = fmt.Sprintf("http://mafreebox.freebox.fr%sv%s/", v.Base, major)
+	return f
 }
 
 // sweep sends one byte to every address in the subnet. The OS has to resolve
 // each MAC to send it, so devices that never advertise anything still end up
 // in the ARP cache.
-func sweep() {
+func (s *scanner) sweep() {
 	for i := 1; i < 255; i++ {
-		if c, err := net.Dial("udp", fmt.Sprintf("%s%d:9", subnet, i)); err == nil {
+		if c, err := net.Dial("udp", fmt.Sprintf("%s%d:9", s.subnet, i)); err == nil {
 			c.Write([]byte{0})
 			c.Close()
 		}
@@ -121,7 +141,7 @@ func sweep() {
 	time.Sleep(2 * time.Second)
 }
 
-func ssdp() {
+func (s *scanner) ssdp() {
 	c, err := net.ListenUDP("udp4", nil)
 	if err != nil {
 		return
@@ -151,16 +171,16 @@ func ssdp() {
 			continue
 		}
 		ip := addr.IP.String()
-		mu.Lock()
-		d := get(ip)
+		s.mu.Lock()
+		d := s.get(ip)
 		st := shortST(resp.Header.Get("ST"))
 		if st != "" {
-			d.services["ssdp:"+st] = true
+			d.Services["ssdp:"+st] = true
 		}
-		if s := resp.Header.Get("Server"); s != "" {
-			d.server = s
+		if v := resp.Header.Get("Server"); v != "" {
+			d.Server = v
 		}
-		mu.Unlock()
+		s.mu.Unlock()
 		// LG serves several descriptions; only the second-screen one has the real model number.
 		if _, ok := locations[ip]; !ok || st == "webos-second-screen" {
 			locations[ip] = resp.Header.Get("Location")
@@ -170,7 +190,7 @@ func ssdp() {
 	var wg sync.WaitGroup
 	for ip, loc := range locations {
 		wg.Add(1)
-		go func() { defer wg.Done(); describe(ip, loc) }()
+		go func() { defer wg.Done(); s.describe(ip, loc) }()
 	}
 	wg.Wait()
 }
@@ -186,7 +206,7 @@ func shortST(st string) string {
 }
 
 // describe reads the UPnP device description an SSDP reply points to.
-func describe(ip, loc string) {
+func (s *scanner) describe(ip, loc string) {
 	c := http.Client{Timeout: 2 * time.Second}
 	resp, err := c.Get(loc)
 	if err != nil {
@@ -209,14 +229,14 @@ func describe(ip, loc string) {
 	if model == "" {
 		model = dd.ModelName
 	}
-	mu.Lock()
-	defer mu.Unlock()
-	d := get(ip)
-	d.name = dd.FriendlyName
-	d.model = strings.TrimSpace(dd.Manufacturer + " " + model)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d := s.get(ip)
+	d.Name = dd.FriendlyName
+	d.Model = strings.TrimSpace(dd.Manufacturer + " " + model)
 }
 
-func mdns() {
+func (s *scanner) mdns() {
 	c, err := net.ListenUDP("udp4", nil)
 	if err != nil {
 		return
@@ -283,28 +303,28 @@ func mdns() {
 		}
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	for inst, typ := range instances {
 		// Prefer the SRV/A records: a sleep proxy can answer for another device.
 		ip := addrs[targets[inst]]
 		if ip == "" {
 			ip = from[inst]
 		}
-		if !strings.HasPrefix(ip, subnet) {
+		if !strings.HasPrefix(ip, s.subnet) {
 			continue
 		}
-		d := get(ip)
+		d := s.get(ip)
 		short := strings.TrimPrefix(strings.Split(typ, ".")[0], "_")
-		d.services["mdns:"+short] = true
-		if d.alias == "" || short == "airplay" || short == "googlecast" {
-			d.alias = strings.TrimSuffix(inst, "."+typ)
+		d.Services["mdns:"+short] = true
+		if d.Alias == "" || short == "airplay" || short == "googlecast" {
+			d.Alias = strings.TrimSuffix(inst, "."+typ)
 		}
 		// Each service names its model key differently, and raop's "md" means metadata, not model.
 		key := map[string]string{"airplay": "model", "companion-link": "rpMd", "googlecast": "md"}[short]
 		for _, kv := range txt[inst] {
-			if k, v, _ := strings.Cut(kv, "="); key != "" && k == key && d.hw == "" {
-				d.hw = v
+			if k, v, _ := strings.Cut(kv, "="); key != "" && k == key && d.HW == "" {
+				d.HW = v
 			}
 		}
 	}
@@ -312,29 +332,29 @@ func mdns() {
 
 var arpLine = regexp.MustCompile(`\((\d+\.\d+\.\d+\.\d+)\) at ([0-9a-fA-F:]+)`)
 
-func arp() {
+func (s *scanner) arp() {
 	out, _ := exec.Command("arp", "-an").Output()
 	for _, m := range arpLine.FindAllStringSubmatch(string(out), -1) {
 		ip, mac := m[1], padMAC(m[2])
-		if !strings.HasPrefix(ip, subnet) || strings.HasSuffix(ip, ".255") || mac == "ff:ff:ff:ff:ff:ff" {
+		if !strings.HasPrefix(ip, s.subnet) || strings.HasSuffix(ip, ".255") || mac == "ff:ff:ff:ff:ff:ff" {
 			continue
 		}
-		get(ip).mac = mac
+		s.get(ip).MAC = mac
 	}
 	ifaces, _ := net.Interfaces()
 	for _, iface := range ifaces {
 		addrs, _ := iface.Addrs()
 		for _, a := range addrs {
-			if ipn, ok := a.(*net.IPNet); ok && ipn.IP.String() == localIP {
-				get(localIP).mac = iface.HardwareAddr.String()
+			if ipn, ok := a.(*net.IPNet); ok && ipn.IP.String() == s.localIP {
+				s.get(s.localIP).MAC = iface.HardwareAddr.String()
 			}
 		}
 	}
 }
 
 // padMAC fixes macOS printing "aa:bb:cc:d:ee:ff" for "aa:bb:cc:0d:ee:ff".
-func padMAC(s string) string {
-	parts := strings.Split(strings.ToLower(s), ":")
+func padMAC(m string) string {
+	parts := strings.Split(strings.ToLower(m), ":")
 	for i, p := range parts {
 		if len(p) == 1 {
 			parts[i] = "0" + p
@@ -352,49 +372,60 @@ var ports = map[int]struct{ kind, label string }{
 	8009: {"Android TV / Google Cast", "Google Cast"},
 }
 
-func enrich() {
+func (s *scanner) enrich() {
 	var wg sync.WaitGroup
-	for _, d := range devices {
+	for _, d := range s.devices {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			if names, err := net.DefaultResolver.LookupAddr(ctx, d.ip); err == nil && len(names) > 0 {
-				mu.Lock()
-				d.host = strings.TrimSuffix(names[0], ".")
-				mu.Unlock()
+			if names, err := net.DefaultResolver.LookupAddr(ctx, d.IP); err == nil && len(names) > 0 {
+				s.mu.Lock()
+				d.Host = strings.TrimSuffix(names[0], ".")
+				s.mu.Unlock()
 			}
 			for p := range ports {
-				if c, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", d.ip, p), 700*time.Millisecond); err == nil {
+				if c, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", d.IP, p), 700*time.Millisecond); err == nil {
 					c.Close()
-					mu.Lock()
-					d.open = append(d.open, p)
-					mu.Unlock()
+					s.mu.Lock()
+					d.Open = append(d.Open, p)
+					s.mu.Unlock()
 				}
 			}
+			s.mu.Lock()
+			sort.Ints(d.Open)
+			s.mu.Unlock()
 		}()
 	}
 	wg.Wait()
 }
 
-func (d *device) has(svc string) bool { return d.services[svc] }
+// PortLabel says what an open port is for, only when it fits the device.
+func (d *Device) PortLabel(port int) string {
+	if p, ok := ports[port]; ok && p.kind == d.Kind() {
+		return p.label
+	}
+	return ""
+}
 
-func kind(d *device) string {
+// Kind guesses what the device is, or returns "" when it can't tell.
+func (d *Device) Kind() string {
+	has := func(svc string) bool { return d.Services[svc] }
 	switch {
-	case d.ip == localIP:
+	case d.Self:
 		return "this machine"
-	case d.has("ssdp:webos-second-screen"), strings.HasPrefix(d.host, "lgwebostv"):
+	case has("ssdp:webos-second-screen"), strings.HasPrefix(d.Host, "lgwebostv"):
 		return "LG webOS TV"
-	case d.has("mdns:fbx-api"):
+	case has("mdns:fbx-api"):
 		return "Freebox"
-	case strings.HasPrefix(d.hw, "AppleTV"):
+	case strings.HasPrefix(d.HW, "AppleTV"):
 		return "Apple TV"
-	case d.has("mdns:googlecast"), d.has("mdns:androidtvremote2"), contains(d.open, 5555):
+	case has("mdns:googlecast"), has("mdns:androidtvremote2"), contains(d.Open, 5555):
 		return "Android TV / Google Cast"
-	case strings.HasPrefix(d.host, "freebox-player"):
+	case strings.HasPrefix(d.Host, "freebox-player"):
 		return "Freebox Player"
-	case d.has("mdns:airplay"):
+	case has("mdns:airplay"):
 		return "AirPlay device"
 	}
 	return ""
@@ -407,79 +438,6 @@ func contains(s []int, v int) bool {
 		}
 	}
 	return false
-}
-
-func report() {
-	var known, other []*device
-	for _, d := range devices {
-		if kind(d) != "" || d.name != "" || d.alias != "" || len(d.services) > 0 || len(d.open) > 0 {
-			known = append(known, d)
-		} else {
-			other = append(other, d)
-		}
-	}
-	byIP := func(s []*device) {
-		sort.Slice(s, func(i, j int) bool { return ipNum(s[i].ip) < ipNum(s[j].ip) })
-	}
-	byIP(known)
-	byIP(other)
-
-	fmt.Printf("\nDevices that advertise themselves (%d)\n", len(known))
-	for _, d := range known {
-		title := firstNonEmpty(d.name, d.alias, d.host, "unnamed")
-		if k := kind(d); k != "" {
-			title += "  [" + k + "]"
-		}
-		fmt.Printf("\n  %-15s %s\n", d.ip, title)
-		line("mac", d.mac)
-		line("host", d.host)
-		model := d.model
-		if !strings.Contains(model, d.hw) {
-			model += " " + d.hw
-		}
-		line("model", strings.TrimSpace(model))
-		line("software", d.server)
-		var svcs []string
-		for s := range d.services {
-			svcs = append(svcs, s)
-		}
-		sort.Strings(svcs)
-		line("services", strings.Join(svcs, " "))
-		sort.Ints(d.open)
-		for _, p := range d.open {
-			label := ""
-			if ports[p].kind == kind(d) {
-				label = ports[p].label
-			}
-			line("open", strings.TrimSpace(fmt.Sprintf("%d  %s", p, label)))
-		}
-		if kind(d) == "LG webOS TV" {
-			line("canape", "TV IP and MAC above are what canape needs (MAC is for Wake-on-LAN)")
-		}
-	}
-
-	if len(other) > 0 {
-		fmt.Printf("\nOther devices on the network (%d)\n\n", len(other))
-		for _, d := range other {
-			fmt.Printf("  %-15s %-17s  %s\n", d.ip, d.mac, d.host)
-		}
-	}
-	fmt.Println()
-}
-
-func line(label, value string) {
-	if value != "" {
-		fmt.Printf("                  %-9s %s\n", label, value)
-	}
-}
-
-func firstNonEmpty(s ...string) string {
-	for _, v := range s {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
 }
 
 func ipNum(ip string) uint32 {

@@ -18,20 +18,22 @@ It starts with two devices, an LG webOS TV and a Freebox router (Pop). Planned f
 ## Layout
 
 ```
-main.go          entry point, usage, state file
-tv.go            `canape tv ...` CLI commands
-server.go        `canape serve`: login, JSON API under /api/tv, embeds web/index.html
-web/index.html   dashboard, one file, no build step
-lgtv/            LG webOS client. Named methods (TurnOff, SetVolume, Launch...) are what the CLI and server call.
-lgtv/register.json  pairing payload (from PyWebOSTV). The signature covers the "signed" block, so edit neither.
-cmd/scan/        network scanner: `go run ./cmd/scan` lists devices, IPs, MACs, models, open ports. Ask the user to run it instead of asking them for device details.
-mcp.go           `canape mcp`: MCP server over stdio (official go-sdk). Tools call the same functions as the CLI and dashboard, connecting fresh per call.
-freebox.go       `canape freebox ...` CLI commands
-wifi.go          `canape wifi [set]`, Wi-Fi QR payload, QR as SVG and terminal blocks (rsc.io/qr)
-web/wifi.html    public /wifi page: big QR for the TV. Old CSS only: webOS 4's browser is an old Chromium.
-                 Also baked into the webOS TV app (`canape tv install-app`), which shows the QR without canape running.
-freebox/         Freebox OS API client: discovery, authorize, session, LAN hosts, SSID
+main.go                    calls cli.Run, nothing else
+internal/cli/              commands and terminal output (tv, wifi, freebox, scan)
+internal/store/            state.json: load, save, path
+internal/home/             saved state + live devices: ConnectTV, WakeTV, Status, Devices. CLI, server and MCP all go through it
+internal/discovery/        network scan: SSDP, mDNS, ARP, reverse DNS, control ports. LocalIP
+internal/tv/               what every TV brand shares (name matching today)
+internal/tv/lg/            LG webOS client, plus the Developer Mode app installer (app.go, wraps LG's ares CLI)
+internal/tv/lg/register.json  pairing payload (from PyWebOSTV). The signature covers the "signed" block, so edit neither.
+internal/router/freebox/   Freebox OS API client
+internal/wifi/             Wi-Fi QR: payload, SVG, terminal, PNG, the big-QR page (page.html), ShowOnTV
+internal/server/           `canape serve`: login link, JSON API under /api/tv, public /wifi page, index.html
+internal/mcp/              `canape mcp`: MCP tools over stdio (official go-sdk, imported as sdk)
+docs/                      longer notes (discovery.md)
 ```
+
+`page.html` is kept to old CSS on purpose: webOS 4's browser is an old Chromium (no min(), no flex gap).
 
 State lives in `state.json` inside `CANAPE_DATA`, or by default the OS user config dir (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), so the CLI works from any directory. Docker will set `CANAPE_DATA=/data`. The file holds the TV client-key, the dashboard login key, the Freebox app_token and the Wi-Fi name and password. Write it with mode 0600 and never log tokens.
 

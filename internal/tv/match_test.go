@@ -1,9 +1,9 @@
-package main
+package tv
 
 import "testing"
 
-func TestPick(t *testing.T) {
-	choices := []choice{
+func TestMatch(t *testing.T) {
+	choices := []Choice{
 		{"HDMI_1", "Apple"},
 		{"HDMI_2", "PS5"},
 		{"youtube.leanback.v4", "YouTube"},
@@ -18,15 +18,15 @@ func TestPick(t *testing.T) {
 		"prime":    "amazon",
 		"apple tv": "com.apple.appletv",
 	} {
-		got, err := pick(query, choices)
-		if err != nil || got.id != want {
-			t.Errorf("pick(%q) = %q, %v; want %q", query, got.id, err, want)
+		got, err := Match(query, choices)
+		if err != nil || got.ID != want {
+			t.Errorf("Match(%q) = %q, %v; want %q", query, got.ID, err, want)
 		}
 	}
-	if _, err := pick("hdmi", choices); err == nil {
-		t.Error(`pick("hdmi") should be ambiguous`)
+	if _, err := Match("hdmi", choices); err == nil {
+		t.Error(`Match("hdmi") should be ambiguous`)
 	}
-	if _, err := pick("netflix", choices); err == nil {
-		t.Error(`pick("netflix") should match nothing`)
+	if _, err := Match("netflix", choices); err == nil {
+		t.Error(`Match("netflix") should match nothing`)
 	}
 }

@@ -5,7 +5,7 @@ How to find the TV and the Freebox on your network, and check they answer, befor
 ## Quick way
 
 ```bash
-go run ./cmd/scan
+canape scan
 ```
 
 This prints every device on the network with its IP, MAC, model and open control ports. For the LG TV, the IP and MAC are what canape needs. It takes about 6 seconds and does everything below automatically:

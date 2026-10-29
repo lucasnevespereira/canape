@@ -31,7 +31,7 @@ For access from outside your home, install [Tailscale](https://tailscale.com) on
 
 ### LG TV
 
-1. **Find its IP and MAC address** with `make scan` (or `go run ./cmd/scan`), which lists every device on your network ([how it works](docs/discovery.md)). Give it a fixed IP (a DHCP reservation) on the Freebox so the address never changes.
+1. **Find its IP and MAC address** with `canape scan`, which lists every device on your network ([how it works](docs/discovery.md)). Give it a fixed IP (a DHCP reservation) on the Freebox so the address never changes.
 2. **Enable "Turn on via Wi-Fi"** (sometimes called "Mobile TV On"). Without it, canape can turn the TV off but never back on. The menu path depends on your webOS version. Look under General → Devices or General → External Devices.
 3. **Pair once.** The first time canape connects, the TV shows a prompt. Accept it with the remote, and canape keeps the key.
 

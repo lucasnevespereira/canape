@@ -1,5 +1,5 @@
-// Package lgtv talks to LG webOS TVs over their local WebSocket API (SSAP).
-package lgtv
+// Package lg talks to LG webOS TVs over their local WebSocket API (SSAP).
+package lg
 
 import (
 	"bytes"
