@@ -42,7 +42,11 @@ func wifiCommand(args []string) error {
 		return errors.New("no Wi-Fi saved yet. Run: canape wifi set")
 	}
 	if len(args) > 0 && args[0] == "tv" {
-		return wifiOnTV(s)
+		if err := wifiOnTV(s); err != nil {
+			return err
+		}
+		fmt.Println("The Wi-Fi QR is on the TV. Press Back on the remote to close it.")
+		return nil
 	}
 	if len(args) > 0 && args[0] == "tvapp" {
 		dir := "build/wifi-app"
@@ -193,7 +197,6 @@ func wifiOnTV(s *state) error {
 	select {
 	case <-loaded:
 		time.Sleep(time.Second) // let the response reach the TV before closing
-		fmt.Println("The Wi-Fi QR is on the TV. Press Back on the remote to close it.")
 		return nil
 	case <-time.After(30 * time.Second):
 		return errors.New("the TV never loaded the page. Is a firewall on this machine blocking incoming connections?")

@@ -25,6 +25,7 @@ web/index.html   dashboard, one file, no build step
 lgtv/            LG webOS client. Named methods (TurnOff, SetVolume, Launch...) are what the CLI and server call.
 lgtv/register.json  pairing payload (from PyWebOSTV). The signature covers the "signed" block, so edit neither.
 cmd/scan/        network scanner: `go run ./cmd/scan` lists devices, IPs, MACs, models, open ports. Ask the user to run it instead of asking them for device details.
+mcp.go           `canape mcp`: MCP server over stdio (official go-sdk). Tools call the same functions as the CLI and dashboard, connecting fresh per call.
 freebox.go       `canape freebox ...` CLI commands
 wifi.go          `canape wifi [set]`, Wi-Fi QR payload, QR as SVG and terminal blocks (rsc.io/qr)
 web/wifi.html    public /wifi page: big QR for the TV. Old CSS only: webOS 4's browser is an old Chromium.
@@ -33,6 +34,8 @@ freebox/         Freebox OS API client: discovery, authorize, session, LAN hosts
 ```
 
 State lives in `state.json` inside `CANAPE_DATA`, or by default the OS user config dir (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), so the CLI works from any directory. Docker will set `CANAPE_DATA=/data`. The file holds the TV client-key, the dashboard login key, the Freebox app_token and the Wi-Fi name and password. Write it with mode 0600 and never log tokens.
+
+**Under `canape mcp`, stdout is the protocol.** Code shared with the MCP tools must not print to stdout: return strings, or write to stderr.
 
 The CLI is the test bench: each feature lands as a `canape tv ...` command first, and the web page calls the same functions later.
 
@@ -73,7 +76,7 @@ Build one small step at a time. Each step should be easy to follow and explain o
 - [x] Freebox: authorize, session, list connected devices. Paired with the dev Pop; `settings` permission deliberately not granted.
 - [x] Wi-Fi QR: `canape wifi set`, terminal QR, public `/wifi` page, dashboard card with "Show on TV" (`system.launcher/open`). Scanned with a phone and shown on the dev TV.
 - [ ] Packaging: install script (systemd and launchd), Dockerfile, compose with host networking
-- [ ] MCP interface over the same functions
+- [ ] MCP interface over the same functions. `canape mcp` with 12 tools (TV control, Wi-Fi on TV, network devices). Verified over stdio (tools/list, tv_status, network_devices); not yet used from Claude.
 - [x] Wi-Fi TV app: `canape tv install-app` wraps LG's ares CLI (`@webos-tools/cli`): registers the TV as `canape-tv` from the paired IP (port 9922, user prisoner), fetches the Dev Mode key once (ares stores it in `~/.ssh/canape-tv_webos`), packages, installs, launches. Installed and working on the dev TV. Installing over SSH without ares would drop the Node requirement.
 - [x] `canape wifi tv`: opens the Wi-Fi page in the TV browser without `canape serve`. A throwaway server on a random port answers the TV's single request, then exits; the inline-SVG QR stays on screen. Preferred over the TV app, which is an optional offline extra (Dev Mode expires).
 - [x] Typing on the TV: `canape tv type` and a dashboard text field (`ime/insertText`), plus an OK key. Used to log into Developer Mode on the dev TV. Dev Mode sessions expire; auto-extending them is a possible follow-up.

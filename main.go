@@ -13,6 +13,7 @@ import (
 const usage = `canape controls your TV from the couch.
 
   canape serve [addr]          run the dashboard (default :8080)
+  canape mcp                   MCP server over stdio, for Claude and other MCP clients
 
   canape tv pair              find the TV and pair (accept the prompt on screen)
   canape tv toast <message>    show a notification on the TV
@@ -51,6 +52,8 @@ func main() {
 		err = serve(addr)
 	case len(args) >= 2 && args[0] == "tv":
 		err = tvCommand(args[1], args[2:])
+	case len(args) >= 1 && args[0] == "mcp":
+		err = mcpServe()
 	case len(args) >= 1 && args[0] == "wifi":
 		err = wifiCommand(args[1:])
 	case len(args) >= 2 && args[0] == "freebox":

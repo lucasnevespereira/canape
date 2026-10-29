@@ -189,29 +189,34 @@ func (sv *server) tvStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tv.Close()
 
-	st := tvStatus{On: true}
-	v, err := tv.Volume()
+	st, err := statusOf(tv)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
+	}
+	writeJSON(w, st)
+}
+
+// statusOf reads what the dashboard and the tv_status MCP tool show.
+func statusOf(tv *lgtv.TV) (tvStatus, error) {
+	st := tvStatus{On: true}
+	v, err := tv.Volume()
+	if err != nil {
+		return st, err
 	}
 	st.Volume, st.Muted = v.Level, v.Muted
 	st.Current, _ = tv.ForegroundApp()
 	inputs, err := tv.Inputs()
 	if err != nil {
-		writeError(w, http.StatusBadGateway, err)
-		return
+		return st, err
 	}
 	for _, in := range inputs {
 		if strings.HasPrefix(in.ID, "HDMI") { // AV and component inputs are legacy noise
 			st.Inputs = append(st.Inputs, in)
 		}
 	}
-	if st.Apps, err = tv.Apps(); err != nil {
-		writeError(w, http.StatusBadGateway, err)
-		return
-	}
-	writeJSON(w, st)
+	st.Apps, err = tv.Apps()
+	return st, err
 }
 
 func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {

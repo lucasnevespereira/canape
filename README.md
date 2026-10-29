@@ -11,7 +11,7 @@ It starts with an **LG webOS TV** and a **Freebox** router. More devices may com
 - **TV:** power on/off, volume, switch inputs (HDMI, Apple TV), launch apps, open a web page on the TV, show on-screen notifications
 - **Wi-Fi QR code:** show your Wi-Fi as a QR code on your phone or on the TV. Guests scan it and join. canape reads the network name from the Freebox and never changes your Wi-Fi settings.
 - **Network:** see which devices are online right now
-- **Ask Claude:** later, an MCP interface so you can say "show guest wifi on the TV" or "turn everything off"
+- **Ask Claude:** an MCP server, so you can say "put YouTube on the TV", "show the Wi-Fi to my guests" or "who's on the network?"
 
 ## Where it runs
 
@@ -81,6 +81,25 @@ Run `canape` with no arguments for the full list.
 State (TV key, dashboard login key, Freebox token, Wi-Fi name and password) lives in `state.json` in your user config folder (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), or wherever `CANAPE_DATA` points. Keep it private.
 
 Later, a Pi install script and `docker compose up -d` (host networking) will run the dashboard permanently.
+
+## Ask Claude
+
+`canape mcp` is an MCP server, so Claude can control the TV and read the network. Nothing has to stay running: Claude starts it when needed.
+
+```bash
+go install .
+claude mcp add --scope user canape -- "$(go env GOPATH)/bin/canape" mcp
+```
+
+For Claude Desktop, add this to its config (Settings → Developer → Edit Config), with your own path:
+
+```json
+{ "mcpServers": { "canape": { "command": "/Users/you/go/bin/canape", "args": ["mcp"] } } }
+```
+
+Then ask: "put YouTube on the TV", "turn the volume down to 15", "show the Wi-Fi QR on the TV", "who's on the network right now?".
+
+Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Wi-Fi app on the TV
 

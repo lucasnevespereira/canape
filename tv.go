@@ -243,7 +243,8 @@ func connect(s *state) (*lgtv.TV, error) {
 		return nil, fmt.Errorf("%w\nIs the TV on? If its IP changed, run: canape tv pair", err)
 	}
 	key, err := tv.Register(s.TV.Key, func() {
-		fmt.Println("The TV forgot canape. Accept the prompt on screen...")
+		// stderr: stdout carries the protocol under `canape mcp`.
+		fmt.Fprintln(os.Stderr, "The TV forgot canape. Accept the prompt on screen...")
 	})
 	if err != nil {
 		tv.Close()
