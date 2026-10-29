@@ -42,21 +42,30 @@ func tvCommand(cmd string, args []string) error {
 		if len(args) == 0 {
 			return errors.New(`usage: canape tv toast "message"`)
 		}
-		_, err = tv.Call("system.notifications/createToast", map[string]string{"message": strings.Join(args, " ")})
+		err = tv.Toast(strings.Join(args, " "))
 	case "off":
-		_, err = tv.Call("system/turnOff", nil)
+		err = tv.TurnOff()
 		if err == nil {
 			fmt.Println("TV off. Turn it back on with: canape tv on")
 		}
 	case "volume":
 		if len(args) == 0 {
-			return printCall(tv, "audio/getVolume", nil)
+			v, err := tv.Volume()
+			if err == nil {
+				fmt.Printf("Volume %d%s\n", v.Level, map[bool]string{true: " (muted)"}[v.Muted])
+			}
+			return err
 		}
 		n, convErr := strconv.Atoi(args[0])
 		if convErr != nil || n < 0 || n > 100 {
 			return errors.New("volume must be a number from 0 to 100")
 		}
-		_, err = tv.Call("audio/setVolume", map[string]int{"volume": n})
+		err = tv.SetVolume(n)
+	case "button":
+		if len(args) == 0 {
+			return errors.New("usage: canape tv button <home|back|up|down|left|right|enter>")
+		}
+		err = tv.Button(args[0])
 	case "input":
 		err = tvInput(tv, args)
 	case "app":
@@ -65,7 +74,7 @@ func tvCommand(cmd string, args []string) error {
 		if len(args) == 0 {
 			return errors.New("usage: canape tv open <url>")
 		}
-		_, err = tv.Call("system.launcher/open", map[string]string{"target": args[0]})
+		err = tv.Open(args[0])
 	case "call":
 		if len(args) == 0 {
 			return errors.New("usage: canape tv call <uri> [json payload]")
@@ -110,7 +119,7 @@ func tvInput(tv *lgtv.TV, args []string) error {
 	if err != nil {
 		return fmt.Errorf("%w. Run canape tv input to list them", err)
 	}
-	if _, err := tv.Call("tv/switchInput", map[string]string{"inputId": c.id}); err != nil {
+	if err := tv.SwitchInput(c.id); err != nil {
 		return err
 	}
 	fmt.Println("Switched to", c.label)
@@ -136,7 +145,7 @@ func tvApp(tv *lgtv.TV, args []string) error {
 	if err != nil {
 		return fmt.Errorf("%w. Run canape tv app to list them", err)
 	}
-	if _, err := tv.Call("system.launcher/launch", map[string]string{"id": c.id}); err != nil {
+	if err := tv.Launch(c.id); err != nil {
 		return err
 	}
 	fmt.Println("Launched", c.label)
@@ -206,7 +215,7 @@ func pair(s *state) error {
 	if s.TV.MAC == "" {
 		fmt.Println(`Couldn't read the TV's MAC address, so "canape tv on" won't work. Add it to the file by hand.`)
 	}
-	tv.Call("system.notifications/createToast", map[string]string{"message": "canape is paired"})
+	tv.Toast("canape is paired")
 	fmt.Println(`Try: canape tv toast "hello from the couch"`)
 	return nil
 }

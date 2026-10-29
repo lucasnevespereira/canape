@@ -41,17 +41,18 @@ type message struct {
 	Error   string          `json:"error,omitempty"`
 }
 
+// No Origin header: the TV closes connections that send one (1008 invalid origin).
+var dialOpts = &websocket.DialOptions{HTTPClient: &http.Client{Transport: &http.Transport{
+	// ponytail: the TV's certificate is self-signed, so it isn't verified. Pin the one seen at pairing if that matters.
+	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+}}}
+
 // Dial connects to the TV. It tries the TLS port first because recent
 // firmware closes the plain one.
 func Dial(ctx context.Context, ip string) (*TV, error) {
-	client := &http.Client{Transport: &http.Transport{
-		// ponytail: the TV's certificate is self-signed, so it isn't verified. Pin the one seen at pairing if that matters.
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}}
 	var errs []error
 	for _, u := range []string{"wss://" + ip + ":3001", "ws://" + ip + ":3000"} {
-		// No Origin header: the TV closes connections that send one (1008 invalid origin).
-		conn, _, err := websocket.Dial(ctx, u, &websocket.DialOptions{HTTPClient: client})
+		conn, _, err := websocket.Dial(ctx, u, dialOpts)
 		if err == nil {
 			conn.SetReadLimit(4 << 20) // app and input lists outgrow the 32 KB default
 			return &TV{conn: conn}, nil
@@ -135,6 +136,76 @@ func (t *TV) Call(uri string, payload any) (json.RawMessage, error) {
 		}
 		return m.Payload, nil
 	}
+}
+
+func (t *TV) TurnOff() error { return t.do("system/turnOff", nil) }
+
+func (t *TV) Toast(message string) error {
+	return t.do("system.notifications/createToast", map[string]string{"message": message})
+}
+
+func (t *TV) SetVolume(level int) error {
+	return t.do("audio/setVolume", map[string]int{"volume": min(max(level, 0), 100)})
+}
+
+func (t *TV) SetMute(mute bool) error { return t.do("audio/setMute", map[string]bool{"mute": mute}) }
+
+func (t *TV) SwitchInput(id string) error {
+	return t.do("tv/switchInput", map[string]string{"inputId": id})
+}
+
+func (t *TV) Launch(appID string) error {
+	return t.do("system.launcher/launch", map[string]string{"id": appID})
+}
+
+// Open shows a URL in the TV's web browser.
+func (t *TV) Open(url string) error {
+	return t.do("system.launcher/open", map[string]string{"target": url})
+}
+
+// Button presses a remote key: HOME, BACK, UP, DOWN, LEFT, RIGHT, ENTER...
+// Keys don't go through SSAP: the TV hands out a second socket that takes
+// plain-text frames.
+func (t *TV) Button(name string) error {
+	out, err := t.Call("com.webos.service.networkinput/getPointerInputSocket", nil)
+	if err != nil {
+		return err
+	}
+	var r struct {
+		Path string `json:"socketPath"`
+	}
+	if err := json.Unmarshal(out, &r); err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, r.Path, dialOpts)
+	if err != nil {
+		return fmt.Errorf("button socket: %w", err)
+	}
+	// CloseNow skips the close handshake, which the TV may never answer.
+	defer conn.CloseNow()
+	return conn.Write(ctx, websocket.MessageText, []byte("type:button\nname:"+strings.ToUpper(name)+"\n\n"))
+}
+
+func (t *TV) do(uri string, payload any) error {
+	_, err := t.Call(uri, payload)
+	return err
+}
+
+// ponytail: shape from webOS 4. Newer firmware may nest these, handle it when a newer TV shows up.
+type Volume struct {
+	Level int  `json:"volume"`
+	Muted bool `json:"muted"`
+}
+
+func (t *TV) Volume() (Volume, error) {
+	var v Volume
+	out, err := t.Call("audio/getVolume", nil)
+	if err != nil {
+		return v, err
+	}
+	return v, json.Unmarshal(out, &v)
 }
 
 type Input struct {
