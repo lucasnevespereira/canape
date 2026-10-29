@@ -10,13 +10,15 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"golang.org/x/net/websocket"
+	"github.com/coder/websocket"
+	"github.com/coder/websocket/wsjson"
 )
 
 // register.json is the pairing request open-source LG clients send, taken
@@ -41,16 +43,16 @@ type message struct {
 // Dial connects to the TV. It tries the TLS port first because recent
 // firmware closes the plain one.
 func Dial(ctx context.Context, ip string) (*TV, error) {
+	client := &http.Client{Transport: &http.Transport{
+		// ponytail: the TV's certificate is self-signed, so it isn't verified. Pin the one seen at pairing if that matters.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}}
 	var errs []error
 	for _, u := range []string{"wss://" + ip + ":3001", "ws://" + ip + ":3000"} {
-		cfg, err := websocket.NewConfig(u, "http://localhost")
-		if err != nil {
-			return nil, err
-		}
-		// ponytail: the TV's certificate is self-signed, so it isn't verified. Pin the one seen at pairing if that matters.
-		cfg.TlsConfig = &tls.Config{InsecureSkipVerify: true}
-		conn, err := cfg.DialContext(ctx)
+		// No Origin header: the TV closes connections that send one (1008 invalid origin).
+		conn, _, err := websocket.Dial(ctx, u, &websocket.DialOptions{HTTPClient: client})
 		if err == nil {
+			conn.SetReadLimit(4 << 20) // app and input lists outgrow the 32 KB default
 			return &TV{conn: conn}, nil
 		}
 		errs = append(errs, err)
@@ -58,7 +60,7 @@ func Dial(ctx context.Context, ip string) (*TV, error) {
 	return nil, fmt.Errorf("connect to TV at %s: %w", ip, errors.Join(errs...))
 }
 
-func (t *TV) Close() error { return t.conn.Close() }
+func (t *TV) Close() error { return t.conn.Close(websocket.StatusNormalClosure, "") }
 
 // Register authenticates with the client key from an earlier pairing. With
 // no key, or one the TV forgot, the TV shows an accept prompt and prompted
@@ -71,14 +73,14 @@ func (t *TV) Register(key string, prompted func()) (string, error) {
 	if key != "" {
 		payload["client-key"] = key
 	}
-	if err := t.send("register", "register", "", payload); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	if err := t.send(ctx, "register", "register", "", payload); err != nil {
 		return "", err
 	}
-	t.conn.SetDeadline(time.Now().Add(60 * time.Second))
-	defer t.conn.SetDeadline(time.Time{})
 	for {
 		var m message
-		if err := websocket.JSON.Receive(t.conn, &m); err != nil {
+		if err := wsjson.Read(ctx, t.conn, &m); err != nil {
 			return "", fmt.Errorf("waiting for pairing: %w", err)
 		}
 		switch m.Type {
@@ -106,14 +108,14 @@ func (t *TV) Call(uri string, payload any) (json.RawMessage, error) {
 	}
 	t.next++
 	id := strconv.Itoa(t.next)
-	if err := t.send("request", id, uri, payload); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := t.send(ctx, "request", id, uri, payload); err != nil {
 		return nil, err
 	}
-	t.conn.SetDeadline(time.Now().Add(10 * time.Second))
-	defer t.conn.SetDeadline(time.Time{})
 	for {
 		var m message
-		if err := websocket.JSON.Receive(t.conn, &m); err != nil {
+		if err := wsjson.Read(ctx, t.conn, &m); err != nil {
 			return nil, fmt.Errorf("%s: %w", uri, err)
 		}
 		if m.ID != id {
@@ -134,7 +136,7 @@ func (t *TV) Call(uri string, payload any) (json.RawMessage, error) {
 	}
 }
 
-func (t *TV) send(typ, id, uri string, payload any) error {
+func (t *TV) send(ctx context.Context, typ, id, uri string, payload any) error {
 	m := message{Type: typ, ID: id, URI: uri}
 	if payload != nil {
 		b, err := json.Marshal(payload)
@@ -143,7 +145,7 @@ func (t *TV) send(typ, id, uri string, payload any) error {
 		}
 		m.Payload = b
 	}
-	return websocket.JSON.Send(t.conn, m)
+	return wsjson.Write(ctx, t.conn, m)
 }
 
 // Discover returns the IP of the first LG TV that answers an SSDP search.
