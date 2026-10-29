@@ -158,6 +158,12 @@ func (t *TV) Launch(appID string) error {
 	return t.do("system.launcher/launch", map[string]string{"id": appID})
 }
 
+// Type inserts text into the field that has focus, as if typed on the
+// on-screen keyboard. Nothing happens if no text field is focused.
+func (t *TV) Type(text string) error {
+	return t.do("com.webos.service.ime/insertText", map[string]any{"text": text, "replace": 0})
+}
+
 // Open shows a URL in the TV's web browser.
 func (t *TV) Open(url string) error {
 	return t.do("system.launcher/open", map[string]string{"target": url})
