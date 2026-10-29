@@ -4,7 +4,7 @@ Control your home from the couch. canape is a small self-hosted control center: 
 
 It starts with an **LG webOS TV** and a **Freebox** router. More devices may come later.
 
-> Status: early. The network scanner works, and the TV commands are built but pairing hasn't been tested on a real TV yet. There's no dashboard yet. The plan is in [AGENTS.md](AGENTS.md#plan).
+> Status: early. The network scanner and the TV commands work (tested on a 2019 LG). There's no dashboard yet. The plan is in [AGENTS.md](AGENTS.md#plan).
 
 ## What it will do
 

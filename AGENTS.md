@@ -34,6 +34,7 @@ The CLI is the test bench: each feature lands as a `canape tv ...` command first
 
 - **Discovery:** SSDP M-SEARCH with `ST: urn:lge-com:service:webos-second-screen:1`. The responder's address is the TV. Commands to find and probe devices by hand are in `docs/discovery.md`.
 - WebSocket at `ws://<tv>:3000`. Newer firmware may require `wss://<tv>:3001` with a self-signed cert. Try wss first. The dev TV (55SM8200, webOS 4.1) accepts both.
+- **No `Origin` header.** The TV closes any connection that sends one (close code 1008 "invalid origin"). That's why `golang.org/x/net/websocket`, which always sends it, can't be used; `github.com/coder/websocket` doesn't send it.
 - **Pairing:** send a `register` message with a permissions manifest. The TV shows an accept prompt and replies with a `client-key`. Store it and send it in later `register` messages so the TV skips the prompt.
 - **Requests:** `{"type":"request","id":"<n>","uri":"ssap://..."}` with an optional `payload`. Replies carry the same `id`.
 - Useful URIs: `ssap://system/turnOff`, `ssap://audio/setVolume`, `ssap://audio/volumeUp|volumeDown`, `ssap://audio/setMute`, `ssap://tv/switchInput`, `ssap://system.launcher/launch` (by app id), `ssap://system.launcher/open` (opens a URL in the browser), `ssap://system.notifications/createToast`, `ssap://com.webos.applicationManager/getForegroundAppInfo`.
@@ -58,7 +59,7 @@ Format: `WIFI:T:WPA;S:<ssid>;P:<key>;;`. Escape `\ ; , : "` in the SSID and key 
 
 Build one small step at a time. Each step should be easy to follow and explain on its own. Check items off as they land.
 
-- [ ] LG: pair, store the client-key, toast, off, on (Wake-on-LAN), volume, raw `call`. Built and verified up to the connection (discovery, TLS dial, MAC lookup); waiting on the first real pairing test.
+- [x] LG: pair, store the client-key, toast, off, on (Wake-on-LAN), volume, raw `call`. Tested on the dev TV.
 - [ ] LG: input switch, launch app, open URL
 - [ ] HTTP server + `web/index.html` with TV controls, plus a password login
 - [ ] Freebox: authorize, session, list connected devices
