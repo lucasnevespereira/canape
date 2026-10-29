@@ -30,6 +30,7 @@ const usage = `canape controls your TV from the couch.
 
   canape wifi set              save the Wi-Fi name and password (name comes from the Freebox)
   canape wifi                  show the Wi-Fi QR code in the terminal
+  canape wifi tv               show the Wi-Fi QR on the TV (no server needed)
   canape wifi tvapp [dir]      write the TV app files only (install-app does it all)
 
   canape freebox pair         authorize canape on the Freebox (confirm on its screen)

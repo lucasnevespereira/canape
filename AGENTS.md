@@ -75,6 +75,7 @@ Build one small step at a time. Each step should be easy to follow and explain o
 - [ ] Packaging: install script (systemd and launchd), Dockerfile, compose with host networking
 - [ ] MCP interface over the same functions
 - [x] Wi-Fi TV app: `canape tv install-app` wraps LG's ares CLI (`@webos-tools/cli`): registers the TV as `canape-tv` from the paired IP (port 9922, user prisoner), fetches the Dev Mode key once (ares stores it in `~/.ssh/canape-tv_webos`), packages, installs, launches. Installed and working on the dev TV. Installing over SSH without ares would drop the Node requirement.
+- [x] `canape wifi tv`: opens the Wi-Fi page in the TV browser without `canape serve`. A throwaway server on a random port answers the TV's single request, then exits; the inline-SVG QR stays on screen. Preferred over the TV app, which is an optional offline extra (Dev Mode expires).
 - [x] Typing on the TV: `canape tv type` and a dashboard text field (`ime/insertText`), plus an OK key. Used to log into Developer Mode on the dev TV. Dev Mode sessions expire; auto-extending them is a possible follow-up.
 - Later, maybe: AdGuard Home pairing for DNS logs, Apple TV (pyatv protocol), XGIMI Android TV (ADB)
 

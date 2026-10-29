@@ -73,6 +73,7 @@ canape freebox pair                  # confirm on the Freebox screen
 canape freebox devices               # who's online; add "all" for every device seen
 canape wifi set                      # save the Wi-Fi password once (name comes from the Freebox)
 canape wifi                          # Wi-Fi QR code in the terminal
+canape wifi tv                       # Wi-Fi QR on the TV, no server needed
 ```
 
 Run `canape` with no arguments for the full list.
@@ -83,7 +84,9 @@ Later, a Pi install script and `docker compose up -d` (host networking) will run
 
 ## Wi-Fi app on the TV
 
-A "Wi-Fi" tile in the TV's app bar that shows the QR code, even when canape isn't running. It's a small webOS app with your Wi-Fi baked in, installed through LG's Developer Mode.
+You probably don't need this: `canape wifi tv` shows the QR on the TV in one command, and the dashboard's "Show on TV" button does the same. The app is for showing it with no computer at all.
+
+It's a "Wi-Fi" tile in the TV's app bar that shows the QR code, even when canape isn't running. It's a small webOS app with your Wi-Fi baked in, installed through LG's Developer Mode.
 
 One-time setup on the TV (LG requires it; canape can't do it for you):
 

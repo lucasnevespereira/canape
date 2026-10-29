@@ -13,6 +13,7 @@ import (
 	"image/png"
 	"io"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,6 +40,9 @@ func wifiCommand(args []string) error {
 	}
 	if s.Wifi.SSID == "" {
 		return errors.New("no Wi-Fi saved yet. Run: canape wifi set")
+	}
+	if len(args) > 0 && args[0] == "tv" {
+		return wifiOnTV(s)
 	}
 	if len(args) > 0 && args[0] == "tvapp" {
 		dir := "build/wifi-app"
@@ -151,6 +155,49 @@ func wifiTVApp(s *state, dir string) error {
 	}
 	fmt.Println("Wrote the TV app to", dir)
 	return nil
+}
+
+// wifiOnTV opens the Wi-Fi page in the TV's browser without `canape serve`:
+// a throwaway server answers the TV's one request, then stops. The QR is
+// inline in the page, so it stays on screen afterwards.
+func wifiOnTV(s *state) error {
+	ln, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return err
+	}
+	loaded := make(chan struct{}, 1)
+	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/wifi" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		renderWifiPage(w, s.Wifi.SSID, s.Wifi.Password)
+		select {
+		case loaded <- struct{}{}:
+		default:
+		}
+	})}
+	go srv.Serve(ln)
+	defer srv.Close()
+
+	tv, err := connect(s)
+	if err != nil {
+		return err
+	}
+	defer tv.Close()
+	url := fmt.Sprintf("http://%s:%d/wifi", localIP(), ln.Addr().(*net.TCPAddr).Port)
+	if err := tv.Open(url); err != nil {
+		return err
+	}
+	select {
+	case <-loaded:
+		time.Sleep(time.Second) // let the response reach the TV before closing
+		fmt.Println("The Wi-Fi QR is on the TV. Press Back on the remote to close it.")
+		return nil
+	case <-time.After(30 * time.Second):
+		return errors.New("the TV never loaded the page. Is a firewall on this machine blocking incoming connections?")
+	}
 }
 
 // aresDevice is the name canape registers the TV under in LG's CLI.
