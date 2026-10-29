@@ -57,6 +57,15 @@ func tvCommand(cmd string, args []string) error {
 			return errors.New("volume must be a number from 0 to 100")
 		}
 		_, err = tv.Call("audio/setVolume", map[string]int{"volume": n})
+	case "input":
+		err = tvInput(tv, args)
+	case "app":
+		err = tvApp(tv, args)
+	case "open":
+		if len(args) == 0 {
+			return errors.New("usage: canape tv open <url>")
+		}
+		_, err = tv.Call("system.launcher/open", map[string]string{"target": args[0]})
 	case "call":
 		if len(args) == 0 {
 			return errors.New("usage: canape tv call <uri> [json payload]")
@@ -72,6 +81,98 @@ func tvCommand(cmd string, args []string) error {
 		return fmt.Errorf("unknown command %q. Run canape without arguments for help", cmd)
 	}
 	return err
+}
+
+func tvInput(tv *lgtv.TV, args []string) error {
+	inputs, err := tv.Inputs()
+	if err != nil {
+		return err
+	}
+	if len(args) == 0 {
+		current, _ := tv.ForegroundApp()
+		for _, in := range inputs {
+			var notes []string
+			if in.Connected {
+				notes = append(notes, "connected")
+			}
+			if in.AppID == current {
+				notes = append(notes, "on screen")
+			}
+			fmt.Printf("  %-8s %-12s %s\n", in.ID, in.Label, strings.Join(notes, ", "))
+		}
+		return nil
+	}
+	var choices []choice
+	for _, in := range inputs {
+		choices = append(choices, choice{in.ID, in.Label})
+	}
+	c, err := pick(strings.Join(args, " "), choices)
+	if err != nil {
+		return fmt.Errorf("%w. Run canape tv input to list them", err)
+	}
+	if _, err := tv.Call("tv/switchInput", map[string]string{"inputId": c.id}); err != nil {
+		return err
+	}
+	fmt.Println("Switched to", c.label)
+	return nil
+}
+
+func tvApp(tv *lgtv.TV, args []string) error {
+	apps, err := tv.Apps()
+	if err != nil {
+		return err
+	}
+	if len(args) == 0 {
+		for _, a := range apps {
+			fmt.Printf("  %-28s %s\n", a.Title, a.ID)
+		}
+		return nil
+	}
+	var choices []choice
+	for _, a := range apps {
+		choices = append(choices, choice{a.ID, a.Title})
+	}
+	c, err := pick(strings.Join(args, " "), choices)
+	if err != nil {
+		return fmt.Errorf("%w. Run canape tv app to list them", err)
+	}
+	if _, err := tv.Call("system.launcher/launch", map[string]string{"id": c.id}); err != nil {
+		return err
+	}
+	fmt.Println("Launched", c.label)
+	return nil
+}
+
+type choice struct{ id, label string }
+
+// pick finds the choice the user meant: an exact id or label first, then a
+// unique partial match. So "hdmi1", "HDMI_1" and "apple" all find HDMI 1.
+func pick(query string, choices []choice) (choice, error) {
+	q := norm(query)
+	var partial []choice
+	for _, c := range choices {
+		if norm(c.id) == q || norm(c.label) == q {
+			return c, nil
+		}
+		if strings.Contains(norm(c.id), q) || strings.Contains(norm(c.label), q) {
+			partial = append(partial, c)
+		}
+	}
+	switch len(partial) {
+	case 1:
+		return partial[0], nil
+	case 0:
+		return choice{}, fmt.Errorf("nothing matches %q", query)
+	}
+	var labels []string
+	for _, c := range partial {
+		labels = append(labels, c.label)
+	}
+	return choice{}, fmt.Errorf("%q matches several: %s", query, strings.Join(labels, ", "))
+}
+
+func norm(s string) string {
+	return strings.ToLower(strings.NewReplacer(" ", "", "_", "", "-", "", "+", "", ".", "").Replace(s))
 }
 
 func pair(s *state) error {

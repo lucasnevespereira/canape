@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -134,6 +135,66 @@ func (t *TV) Call(uri string, payload any) (json.RawMessage, error) {
 		}
 		return m.Payload, nil
 	}
+}
+
+type Input struct {
+	ID        string `json:"id"`
+	Label     string `json:"label"`
+	AppID     string `json:"appId"`
+	Connected bool   `json:"connected"`
+}
+
+func (t *TV) Inputs() ([]Input, error) {
+	out, err := t.Call("tv/getExternalInputList", nil)
+	if err != nil {
+		return nil, err
+	}
+	var r struct {
+		Devices []Input `json:"devices"`
+	}
+	return r.Devices, json.Unmarshal(out, &r)
+}
+
+type App struct {
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Visible bool   `json:"visible"`
+}
+
+// Apps returns the apps shown in the launcher, sorted by title. The TV has
+// about four times as many hidden system apps.
+func (t *TV) Apps() ([]App, error) {
+	out, err := t.Call("com.webos.applicationManager/listApps", nil)
+	if err != nil {
+		return nil, err
+	}
+	var r struct {
+		Apps []App `json:"apps"`
+	}
+	if err := json.Unmarshal(out, &r); err != nil {
+		return nil, err
+	}
+	var apps []App
+	for _, a := range r.Apps {
+		if a.Visible {
+			apps = append(apps, a)
+		}
+	}
+	sort.Slice(apps, func(i, j int) bool { return strings.ToLower(apps[i].Title) < strings.ToLower(apps[j].Title) })
+	return apps, nil
+}
+
+// ForegroundApp returns the app on screen. An input counts as an app,
+// e.g. com.webos.app.hdmi1.
+func (t *TV) ForegroundApp() (string, error) {
+	out, err := t.Call("com.webos.applicationManager/getForegroundAppInfo", nil)
+	if err != nil {
+		return "", err
+	}
+	var r struct {
+		AppID string `json:"appId"`
+	}
+	return r.AppID, json.Unmarshal(out, &r)
 }
 
 func (t *TV) send(ctx context.Context, typ, id, uri string, payload any) error {

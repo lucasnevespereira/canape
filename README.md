@@ -49,6 +49,9 @@ go install .                         # or prefix each command with: go run .
 canape tv pair                       # finds the TV; accept the prompt on screen
 canape tv toast "hello from the couch"
 canape tv volume 15
+canape tv input                      # list inputs; canape tv input hdmi1 switches
+canape tv app                        # list apps; canape tv app youtube launches it
+canape tv open https://example.com   # opens the TV's browser
 canape tv off
 canape tv on
 canape tv call audio/getVolume       # any SSAP request, prints the reply

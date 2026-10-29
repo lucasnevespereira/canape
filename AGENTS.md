@@ -60,7 +60,7 @@ Format: `WIFI:T:WPA;S:<ssid>;P:<key>;;`. Escape `\ ; , : "` in the SSID and key 
 Build one small step at a time. Each step should be easy to follow and explain on its own. Check items off as they land.
 
 - [x] LG: pair, store the client-key, toast, off, on (Wake-on-LAN), volume, raw `call`. Tested on the dev TV.
-- [ ] LG: input switch, launch app, open URL
+- [x] LG: input switch, launch app, open URL. Tested on the dev TV.
 - [ ] HTTP server + `web/index.html` with TV controls, plus a password login
 - [ ] Freebox: authorize, session, list connected devices
 - [ ] Freebox: create a guest key, show its QR on the phone or send it to the TV (`system.launcher/open`)

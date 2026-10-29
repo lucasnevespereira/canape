@@ -17,6 +17,9 @@ const usage = `canape controls your TV from the terminal. The web dashboard come
   canape tv off                turn the TV off
   canape tv on                 turn the TV on (Wake-on-LAN)
   canape tv volume [0-100]     show or set the volume
+  canape tv input [name]       list inputs, or switch to one (e.g. hdmi1, apple)
+  canape tv app [name]         list apps, or launch one (e.g. youtube)
+  canape tv open <url>         open a web page on the TV
   canape tv call <uri> [json]  send any SSAP request and print the reply,
                                e.g. canape tv call audio/getVolume
 
