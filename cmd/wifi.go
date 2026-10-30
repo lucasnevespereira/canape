@@ -8,6 +8,7 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
+	"github.com/lucasnevespereira/canape/internal/qrcode"
 	"github.com/lucasnevespereira/canape/internal/router/freebox"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 )
@@ -45,7 +46,7 @@ func wifiCommand(args []string) error {
 	if len(args) > 0 {
 		return fmt.Errorf("unknown command %q. Run: canape help", "wifi "+args[0])
 	}
-	out, err := wifi.Terminal(wifi.QRText(s.Wifi.SSID, s.Wifi.Password))
+	out, err := qrcode.Terminal(wifi.QRText(s.Wifi.SSID, s.Wifi.Password))
 	if err != nil {
 		return err
 	}

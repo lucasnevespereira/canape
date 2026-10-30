@@ -23,7 +23,7 @@ Supported today: LG webOS TVs, Freebox routers. Protocol notes live in `docs/` (
 - **Fixed Wi-Fi QR, never router writes.** canape reads the SSID from the router, the user types the password once, it lives only in `state.json`. Generating Freebox guest keys would need the "settings" permission, which can change any router setting. The user chose not to grant it.
 - **Stdlib first.** Dependencies only where the stdlib has nothing: `coder/websocket` (for LG, because it sends no `Origin` header and LG TVs reject one), `rsc.io/qr`, `x/net/dns/dnsmessage` (mDNS), the MCP go-sdk. Each new one needs a reason.
 - **One binary, page embedded.** No frontend build. `internal/wifi/page.html` uses old CSS only: webOS 4's browser is an old Chromium (no `min()`, no flex `gap`).
-- **Dashboard login by link.** `canape serve` prints a URL with a random key. Opening it once moves the key into an HttpOnly, SameSite=Strict cookie. `/wifi` is public: the TV's browser has no cookie, and anyone who can reach it is already on the Wi-Fi.
+- **Dashboard login by link.** `canape serve` prints a URL with a random key, and the same URL as a terminal QR code to scan with a phone. Opening it once moves the key into an HttpOnly, SameSite=Strict cookie. `/wifi` is public: the TV's browser has no cookie, and anyone who can reach it is already on the Wi-Fi.
 
 ## Layout
 
@@ -36,7 +36,8 @@ internal/discovery/        network scan (SSDP, mDNS, ARP, reverse DNS, control p
 internal/tv/               tv.TV interface, shared types, key names, Wake-on-LAN, name matching (Match)
 internal/tv/lg/            LG driver. app.go installs a web app through Developer Mode (wraps LG's ares CLI)
 internal/router/freebox/   Freebox OS API client
-internal/wifi/             Wi-Fi QR payload and drawings (SVG, terminal, PNG), the big-QR page, ShowOnTV
+internal/wifi/             Wi-Fi QR payload, the big-QR page, ShowOnTV
+internal/qrcode/           draws any QR: SVG, terminal blocks, PNG
 internal/server/           `canape serve`: login, JSON API under /api, index.html
 internal/mcp/              `canape mcp`: MCP tools over stdio (go-sdk imported as sdk)
 internal/version/          the version, stamped in by the release workflow (see CONTRIBUTING.md, Releasing)

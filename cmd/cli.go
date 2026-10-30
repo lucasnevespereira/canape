@@ -42,7 +42,7 @@ Network
   canape homes                 saved homes, one per network · rename <name> · forget <name>
 
 Run
-  canape serve [addr]          phone dashboard (default :8080)
+  canape serve [addr]          web dashboard, made for your phone (default :8080)
   canape mcp                   MCP server for Claude: claude mcp add canape -- canape mcp
   canape version               which canape this is
 
@@ -148,7 +148,7 @@ func status() error {
 	if h.TV.Key == "" || h.Wifi.SSID == "" {
 		fmt.Println("\nFinish with: canape setup")
 	} else {
-		fmt.Println("\nNext: canape serve for the phone dashboard, or canape help")
+		fmt.Println("\nNext: canape serve for the web dashboard, or canape help")
 	}
 	return nil
 }

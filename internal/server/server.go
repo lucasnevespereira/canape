@@ -1,4 +1,4 @@
-// Package server is the phone dashboard: an embedded page, a small JSON
+// Package server is the web dashboard: an embedded page, a small JSON
 // API, and the public Wi-Fi page TVs open.
 package server
 
@@ -18,6 +18,7 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
+	"github.com/lucasnevespereira/canape/internal/qrcode"
 	"github.com/lucasnevespereira/canape/internal/tv"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 )
@@ -101,8 +102,13 @@ func Run(addr string) error {
 		return t.Launch(r.ID)
 	})))
 
-	fmt.Printf("canape is running for home %q. Open this link once on each of your devices (same Wi-Fi):\n\n  %s/?key=%s\n\n", h.Name, sv.baseURL, h.State.Dashboard.Key)
-	fmt.Println("It logs the device in, so only open it on your own. Ctrl+C to stop.")
+	link := sv.baseURL + "/?key=" + h.State.Dashboard.Key
+	fmt.Printf("canape is running for home %q.\n\nScan with your phone to open the web dashboard:\n\n", h.Name)
+	if code, err := qrcode.Terminal(link); err == nil {
+		fmt.Print(code)
+	}
+	fmt.Printf("\nOr open %s on a device on the same Wi-Fi.\n", link)
+	fmt.Println("The link logs the device in, so only use it on your own devices. Ctrl+C to stop.")
 	return http.ListenAndServe(addr, mux)
 }
 
@@ -149,7 +155,7 @@ func wifiSVG(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	svg, err := wifi.SVG(wifi.QRText(h.Wifi.SSID, h.Wifi.Password))
+	svg, err := qrcode.SVG(wifi.QRText(h.Wifi.SSID, h.Wifi.Password))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

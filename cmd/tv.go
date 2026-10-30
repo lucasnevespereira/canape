@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lucasnevespereira/canape/internal/home"
+	"github.com/lucasnevespereira/canape/internal/qrcode"
 	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv"
 	"github.com/lucasnevespereira/canape/internal/tv/lg"
@@ -282,10 +283,10 @@ func installApp(s *home.Here) error {
 	}
 	app.HTML = []byte(page.String())
 	var err error
-	if app.Icon, err = wifi.PNG(text, 80); err != nil {
+	if app.Icon, err = qrcode.PNG(text, 80); err != nil {
 		return err
 	}
-	if app.LargeIcon, err = wifi.PNG(text, 130); err != nil {
+	if app.LargeIcon, err = qrcode.PNG(text, 130); err != nil {
 		return err
 	}
 	if err := lg.InstallApp(ip, app); err != nil {

@@ -25,7 +25,7 @@ Then:
 canape                   # what's set up here
 canape tv app youtube    # open YouTube on the TV
 canape wifi tv           # show the Wi-Fi QR on the TV for your guests
-canape serve             # phone dashboard
+canape serve             # web dashboard
 ```
 
 `canape help` lists everything.
@@ -46,7 +46,7 @@ On a new network, start with `canape setup`. Run `canape scan` when you're curio
 - **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins.
 - **Wi-Fi QR code:** in the terminal, on the TV, or on your phone. Guests scan it and join. canape reads the network name from the router and you type the password once. It never changes your router's settings.
 - **Network:** `canape scan` lists every device on the network, `canape devices` shows who's online (Freebox).
-- **Phone dashboard:** the TV remote, inputs, apps and the Wi-Fi QR, on your phone.
+- **Web dashboard:** the TV remote, inputs, apps and the Wi-Fi QR in any browser, made for your phone.
 - **Claude:** an MCP server, so you can ask "put YouTube on the TV" or "who's on the network?".
 - **Every network you visit:** your home, your sister's. canape keeps one setup per network and picks the right one by itself.
 
@@ -66,15 +66,15 @@ Home Assistant is a hub: installed once per house, always on, thousands of integ
 
 One TV setting matters: on LG, turn on **"Turn on via Wi-Fi"**, or canape can turn the TV off but not back on. See [docs/lg.md](docs/lg.md).
 
-## Phone dashboard
+## Web dashboard
 
 ```bash
 canape serve
 ```
 
-canape prints a link like `http://192.168.1.10:8080/?key=…`. Open it once on each of your devices: it logs that device in and drops the key from the address bar. Only open it on your own devices. On iPhone, Share → Add to Home Screen makes it feel like an app.
+canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices. On iPhone, Share → Add to Home Screen makes it feel like an app.
 
-The dashboard only runs while `canape serve` does. Most things work without it: `canape wifi tv` puts the QR on the TV in one command.
+The dashboard only runs while `canape serve` does. Most things work without it: `canape wifi tv` puts the Wi-Fi QR on the TV in one command.
 
 ## Ask Claude
 

@@ -6,8 +6,9 @@ Where canape is going, in order. Every item passes the filter in [AGENTS.md](AGE
 
 - [x] LG webOS TVs: power, volume, inputs, apps, remote keys, typing, web pages, notifications
 - [x] Freebox: pairing and the device list
-- [x] Wi-Fi QR code in the terminal, on the TV and in the phone dashboard
-- [x] Phone dashboard (`canape serve`)
+- [x] Wi-Fi QR code in the terminal, on the TV and in the web dashboard
+- [x] Web dashboard (`canape serve`)
+- [x] Login QR: `canape serve` prints the dashboard link as a QR code to scan with the phone
 - [x] Claude through MCP (`canape mcp`)
 - [x] Homes: one setup per network, picked automatically
 - [x] `canape setup`, the status screen, help grouped by task
@@ -25,7 +26,6 @@ Still to check on real hardware before or right after the release:
 
 - **More TVs.** Samsung (Tizen) and Sony Bravia, each built in front of a real TV. `canape scan` already recognizes them.
 - **Android TV**, through ADB or the Android TV remote protocol. Covers projectors like XGIMI and the Freebox Player.
-- **Login QR.** `canape serve` prints the dashboard link as a QR code to scan with the phone.
 - **Run in the background.** `canape serve` as a service (launchd on macOS, systemd on Linux and Pi).
 
 ## Later
