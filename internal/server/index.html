@@ -208,7 +208,7 @@ function render() {
   show("tv");
   $("#vol").textContent = tv.volume;
   $("#mute").setAttribute("aria-pressed", String(tv.muted));
-  buttons($("#inputs"), tv.inputs.map((i) => ({ id: i.id, label: i.label, appId: i.appId })), tv.current,
+  buttons($("#inputs"), tv.inputs.map((i) => ({ id: i.id, label: i.label, appId: i.id })), tv.current,
     (i) => act("/api/tv/input", { id: i.id }));
   buttons($("#apps"), tv.apps.map((a) => ({ id: a.id, label: a.title, appId: a.id })), tv.current,
     (a) => act("/api/tv/app", { id: a.id }));

@@ -18,6 +18,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/lucasnevespereira/canape/internal/tv"
 )
 
 // register.json is the pairing request open-source LG clients send, taken
@@ -30,6 +31,8 @@ type TV struct {
 	conn *websocket.Conn
 	next int
 }
+
+var _ tv.TV = (*TV)(nil)
 
 type message struct {
 	Type    string          `json:"type"`
@@ -61,6 +64,20 @@ func Dial(ctx context.Context, ip string) (*TV, error) {
 }
 
 func (t *TV) Close() error { return t.conn.Close(websocket.StatusNormalClosure, "") }
+
+// Connect dials the TV and registers with key. With an empty or forgotten
+// key the TV asks the user to accept canape; the key to save comes back.
+func Connect(ctx context.Context, ip, key string, prompted func()) (*TV, string, error) {
+	t, err := Dial(ctx, ip)
+	if err != nil {
+		return nil, "", err
+	}
+	if key, err = t.Register(key, prompted); err != nil {
+		t.Close()
+		return nil, "", err
+	}
+	return t, key, nil
+}
 
 // Register authenticates with the client key from an earlier pairing. With
 // no key, or one the TV forgot, the TV shows an accept prompt and prompted
@@ -138,7 +155,7 @@ func (t *TV) Call(uri string, payload any) (json.RawMessage, error) {
 
 func (t *TV) TurnOff() error { return t.do("system/turnOff", nil) }
 
-func (t *TV) Toast(message string) error {
+func (t *TV) Notify(message string) error {
 	return t.do("system.notifications/createToast", map[string]string{"message": message})
 }
 
@@ -167,10 +184,9 @@ func (t *TV) Open(url string) error {
 	return t.do("system.launcher/open", map[string]string{"target": url})
 }
 
-// Button presses a remote key: HOME, BACK, UP, DOWN, LEFT, RIGHT, ENTER...
-// Keys don't go through SSAP: the TV hands out a second socket that takes
-// plain-text frames.
-func (t *TV) Button(name string) error {
+// Key presses a remote key: tv.Keys, which are LG's own names. Keys don't go
+// through SSAP: the TV hands out a second socket that takes plain-text frames.
+func (t *TV) Key(name string) error {
 	out, err := t.Call("com.webos.service.networkinput/getPointerInputSocket", nil)
 	if err != nil {
 		return err
@@ -197,71 +213,81 @@ func (t *TV) do(uri string, payload any) error {
 	return err
 }
 
-// ponytail: shape from webOS 4. Newer firmware may nest these, handle it when a newer TV shows up.
-type Volume struct {
-	Level int  `json:"volume"`
-	Muted bool `json:"muted"`
-}
-
-func (t *TV) Volume() (Volume, error) {
-	var v Volume
+func (t *TV) Volume() (tv.Volume, error) {
+	// ponytail: shape from webOS 4. Newer firmware may nest these, handle it when a newer TV shows up.
+	var v struct {
+		Level int  `json:"volume"`
+		Muted bool `json:"muted"`
+	}
 	out, err := t.Call("audio/getVolume", nil)
 	if err != nil {
-		return v, err
+		return tv.Volume{}, err
 	}
-	return v, json.Unmarshal(out, &v)
+	err = json.Unmarshal(out, &v)
+	return tv.Volume{Level: v.Level, Muted: v.Muted}, err
 }
 
-type Input struct {
+// input is the TV's own description: each input is also an app, which is
+// what the foreground app reports when it's on screen.
+type input struct {
 	ID        string `json:"id"`
 	Label     string `json:"label"`
 	AppID     string `json:"appId"`
 	Connected bool   `json:"connected"`
 }
 
-func (t *TV) Inputs() ([]Input, error) {
+func (t *TV) inputs() ([]input, error) {
 	out, err := t.Call("tv/getExternalInputList", nil)
 	if err != nil {
 		return nil, err
 	}
 	var r struct {
-		Devices []Input `json:"devices"`
+		Devices []input `json:"devices"`
 	}
 	return r.Devices, json.Unmarshal(out, &r)
 }
 
-type App struct {
-	ID      string `json:"id"`
-	Title   string `json:"title"`
-	Visible bool   `json:"visible"`
+func (t *TV) Inputs() ([]tv.Input, error) {
+	ins, err := t.inputs()
+	var out []tv.Input
+	for _, in := range ins {
+		if strings.HasPrefix(in.ID, "HDMI") { // AV and component inputs are legacy noise
+			out = append(out, tv.Input{ID: in.ID, Label: in.Label, Connected: in.Connected})
+		}
+	}
+	return out, err
 }
 
 // Apps returns the apps shown in the launcher, sorted by title. The TV has
 // about four times as many hidden system apps.
-func (t *TV) Apps() ([]App, error) {
+func (t *TV) Apps() ([]tv.App, error) {
 	out, err := t.Call("com.webos.applicationManager/listApps", nil)
 	if err != nil {
 		return nil, err
 	}
 	var r struct {
-		Apps []App `json:"apps"`
+		Apps []struct {
+			ID      string `json:"id"`
+			Title   string `json:"title"`
+			Visible bool   `json:"visible"`
+		} `json:"apps"`
 	}
 	if err := json.Unmarshal(out, &r); err != nil {
 		return nil, err
 	}
-	var apps []App
+	var apps []tv.App
 	for _, a := range r.Apps {
 		if a.Visible {
-			apps = append(apps, a)
+			apps = append(apps, tv.App{ID: a.ID, Title: a.Title})
 		}
 	}
 	sort.Slice(apps, func(i, j int) bool { return strings.ToLower(apps[i].Title) < strings.ToLower(apps[j].Title) })
 	return apps, nil
 }
 
-// ForegroundApp returns the app on screen. An input counts as an app,
-// e.g. com.webos.app.hdmi1.
-func (t *TV) ForegroundApp() (string, error) {
+// Current returns the app on screen, or the input ID (HDMI_1) when an
+// input is: LG reports inputs as apps (com.webos.app.hdmi1).
+func (t *TV) Current() (string, error) {
 	out, err := t.Call("com.webos.applicationManager/getForegroundAppInfo", nil)
 	if err != nil {
 		return "", err
@@ -269,7 +295,16 @@ func (t *TV) ForegroundApp() (string, error) {
 	var r struct {
 		AppID string `json:"appId"`
 	}
-	return r.AppID, json.Unmarshal(out, &r)
+	if err := json.Unmarshal(out, &r); err != nil {
+		return "", err
+	}
+	ins, _ := t.inputs()
+	for _, in := range ins {
+		if in.AppID == r.AppID {
+			return in.ID, nil
+		}
+	}
+	return r.AppID, nil
 }
 
 func (t *TV) send(ctx context.Context, typ, id, uri string, payload any) error {
@@ -308,36 +343,4 @@ func Discover(timeout time.Duration) (string, error) {
 			return addr.IP.String(), nil
 		}
 	}
-}
-
-// Wake sends a Wake-on-LAN magic packet: 6 bytes of 0xFF then the MAC 16
-// times. The TV only listens for it with "Turn on via Wi-Fi" enabled.
-func Wake(mac, ip string) error {
-	hw, err := net.ParseMAC(mac)
-	if err != nil {
-		return err
-	}
-	pkt := bytes.Repeat([]byte{0xff}, 6)
-	for range 16 {
-		pkt = append(pkt, hw...)
-	}
-	// ponytail: the subnet broadcast assumes a /24.
-	targets := []string{"255.255.255.255:9", ip[:strings.LastIndex(ip, ".")] + ".255:9"}
-	var errs []error
-	for _, a := range targets {
-		c, err := net.Dial("udp", a)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		_, err = c.Write(pkt)
-		c.Close()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) == len(targets) {
-		return fmt.Errorf("send wake packet: %w", errors.Join(errs...))
-	}
-	return nil
 }

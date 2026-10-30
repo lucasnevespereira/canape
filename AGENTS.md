@@ -10,7 +10,7 @@ It starts with two devices, an LG webOS TV and a Freebox router (Pop). Planned f
 - **One binary, web page embedded** with `embed`. No separate frontend build, no nginx. A plain HTML/JS page calls the binary's JSON API.
 - **Stdlib first.** `net/http` with Go 1.22+ method routing, `embed`, `encoding/json`, `crypto/hmac`. Add a dependency only where the stdlib has nothing: a WebSocket client (for the LG) and maybe QR generation. Each new dependency needs a reason.
 - **One home per network, keyed by the router's MAC.** canape works wherever you are: your home, your sister's. `home.Load()` reads the default gateway's MAC from the ARP table (no permission needed; recent macOS hides the Wi-Fi name from CLI tools) and returns that network's home. A new network gets an in-memory home that's only saved once something is paired, so read commands never add entries. Nothing ever overwrites another home. A pre-homes `state.json` migrates into a home named "home" on first run.
-- **Only the devices we have.** No plugin system or device interfaces until a second TV brand or router actually shows up.
+- **TV brands behind one interface.** `tv.TV` is what canape does with any TV (power off, volume, inputs, apps, current screen, open URL, remote keys, typing, notify). Each brand is a driver package under `internal/tv/` plus one entry in `internal/home/drivers.go` (name, discover, connect). Unsupported actions return `tv.ErrUnsupported`. Wake-on-LAN is shared (`tv.Wake`). Brand-specific extras stay in the driver: `lg.TV.Call` (raw SSAP, `canape tv call`) and the Developer Mode app installer. Routers aren't abstracted yet: only the Freebox exists.
 - **Login from day one.** Anyone on the Wi-Fi, guests included, can reach the dashboard. `canape serve` prints a link with a random key; opening it once moves the key into an HttpOnly, SameSite=Strict cookie. No password to type on a phone. Delete `dashboard.key` from the state file to log every device out.
 - **Docker is packaging, not the runtime.** It ships later as a thin wrapper around the binary and needs `network_mode: host` (for WoL broadcasts and discovery). On a Mac, develop with `go run .`, because Docker Desktop host networking is unreliable.
 - **Fixed Wi-Fi QR, not generated guest keys.** The user chose it: creating guest keys needs the Freebox "settings" permission, which can change any router setting. canape reads the SSID from the box (allowed without that permission; the API masks the password as `********`), the user types the password once (`canape wifi set`), and it lives only in `state.json`. canape never writes Wi-Fi settings. Generated keys stay possible later.
@@ -22,9 +22,9 @@ It starts with two devices, an LG webOS TV and a Freebox router (Pop). Planned f
 main.go                    calls cli.Run, nothing else
 internal/cli/              commands and terminal output (tv, wifi, freebox, scan)
 internal/store/            state.json: load, save, path
-internal/home/             saved state + live devices: ConnectTV, WakeTV, Status, Devices. CLI, server and MCP all go through it
+internal/home/             the current network's home (Load, Save), PairTV/ConnectTV/WakeTV through the driver table (drivers.go), Status, Devices. CLI, server and MCP all go through it
 internal/discovery/        network scan: SSDP, mDNS, ARP, reverse DNS, control ports. LocalIP
-internal/tv/               what every TV brand shares (name matching today)
+internal/tv/               tv.TV interface, shared types, remote key names, Wake-on-LAN, name matching
 internal/tv/lg/            LG webOS client, plus the Developer Mode app installer (app.go, wraps LG's ares CLI)
 internal/tv/lg/register.json  pairing payload (from PyWebOSTV). The signature covers the "signed" block, so edit neither.
 internal/router/freebox/   Freebox OS API client
@@ -81,7 +81,8 @@ Build one small step at a time. Each step should be easy to follow and explain o
 - [ ] Packaging: install script (systemd and launchd), Dockerfile, compose with host networking
 - [x] Repo layout: `internal/` packages, `canape scan` replaces cmd/scan, MIT license, CI.
 - [x] Homes: one per network (`canape homes`, rename, forget), automatic migration. Migrated the dev config; new-network flow checked with a simulated state.
-- [ ] TV interface with LG as the first driver; Samsung/Sony detection in scan.
+- [x] TV interface with LG as the first driver; Samsung/Sony detection in scan (rules from vendor identifiers, unverified on real TVs).
+- [ ] Samsung (Tizen WebSocket on 8001/8002, token pairing) and Sony (IP control with a pre-shared key) drivers, built in front of the real TVs.
 - [ ] CLI: `canape setup`, bare `canape` status, renames (`notify`, `key`, `canape devices`).
 - [ ] Docs: README quick start, docs/, CONTRIBUTING (adding a TV brand).
 - [x] MCP interface over the same functions. `canape mcp` with 12 tools (TV control, Wi-Fi on TV, network devices). Verified over stdio (tools/list, tv_status, network_devices); not yet used from Claude.

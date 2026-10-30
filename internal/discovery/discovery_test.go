@@ -20,3 +20,19 @@ func TestShortST(t *testing.T) {
 		}
 	}
 }
+
+func TestKindTVBrands(t *testing.T) {
+	for _, c := range []struct {
+		d    Device
+		want string
+	}{
+		{Device{Model: "Samsung Electronics UE55TU7105", Open: []int{8002}}, "Samsung TV"},
+		{Device{Model: "Samsung Electronics Galaxy S23"}, ""}, // a Samsung phone isn't a TV
+		{Device{Services: map[string]bool{"ssdp:ScalarWebAPI": true}}, "Sony TV"},
+		{Device{Services: map[string]bool{"ssdp:webos-second-screen": true}}, "LG webOS TV"},
+	} {
+		if got := c.d.Kind(); got != c.want {
+			t.Errorf("Kind(%+v) = %q, want %q", c.d, got, c.want)
+		}
+	}
+}

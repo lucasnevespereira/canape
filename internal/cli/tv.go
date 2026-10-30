@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bufio"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv"
@@ -48,7 +46,7 @@ func tvCommand(cmd string, args []string) error {
 		if len(args) == 0 {
 			return errors.New(`usage: canape tv toast "message"`)
 		}
-		err = t.Toast(strings.Join(args, " "))
+		err = t.Notify(strings.Join(args, " "))
 	case "off":
 		err = t.TurnOff()
 		if err == nil {
@@ -71,7 +69,7 @@ func tvCommand(cmd string, args []string) error {
 		if len(args) == 0 {
 			return errors.New("usage: canape tv button <home|back|up|down|left|right|enter>")
 		}
-		err = t.Button(args[0])
+		err = t.Key(strings.ToUpper(args[0]))
 	case "type":
 		text := strings.Join(args, " ")
 		if text == "" {
@@ -98,26 +96,30 @@ func tvCommand(cmd string, args []string) error {
 				return fmt.Errorf("payload is not valid JSON: %w", err)
 			}
 		}
-		return printCall(t, args[0], payload)
+		lt, ok := t.(*lg.TV)
+		if !ok {
+			return errors.New("tv call sends raw LG requests, so it only works on LG TVs")
+		}
+		return printCall(lt, args[0], payload)
 	default:
 		return fmt.Errorf("unknown command %q. Run canape without arguments for help", cmd)
 	}
 	return err
 }
 
-func tvInput(t *lg.TV, args []string) error {
+func tvInput(t tv.TV, args []string) error {
 	inputs, err := t.Inputs()
 	if err != nil {
 		return err
 	}
 	if len(args) == 0 {
-		current, _ := t.ForegroundApp()
+		current, _ := t.Current()
 		for _, in := range inputs {
 			var notes []string
 			if in.Connected {
 				notes = append(notes, "connected")
 			}
-			if in.AppID == current {
+			if in.ID == current {
 				notes = append(notes, "on screen")
 			}
 			fmt.Printf("  %-8s %-12s %s\n", in.ID, in.Label, strings.Join(notes, ", "))
@@ -139,7 +141,7 @@ func tvInput(t *lg.TV, args []string) error {
 	return nil
 }
 
-func tvApp(t *lg.TV, args []string) error {
+func tvApp(t tv.TV, args []string) error {
 	apps, err := t.Apps()
 	if err != nil {
 		return err
@@ -166,37 +168,22 @@ func tvApp(t *lg.TV, args []string) error {
 }
 
 func pair(s *home.Here) error {
-	fmt.Print("Looking for an LG TV... ")
-	ip, err := lg.Discover(3 * time.Second)
+	fmt.Print("Looking for a TV... ")
+	t, err := s.PairTV(func(brand, ip string) {
+		fmt.Printf("found %s at %s\n", brand, ip)
+	}, func() {
+		fmt.Println("Accept the prompt on your TV (you have 60 seconds)...")
+	})
 	if err != nil {
 		fmt.Println()
 		return err
 	}
-	fmt.Println(ip)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	t, err := lg.Dial(ctx, ip)
-	if err != nil {
-		return err
-	}
 	defer t.Close()
-	key, err := t.Register(s.TV.Key, func() {
-		fmt.Println("Accept the prompt on your TV (you have 60 seconds)...")
-	})
-	if err != nil {
-		return err
-	}
-
-	s.TV = store.TV{Brand: "lg", IP: ip, MAC: discovery.MAC(ip), Key: key}
-	if err := s.Save(); err != nil {
-		return err
-	}
 	fmt.Printf("Paired. Saved in home %q (%s)\n", s.Name, store.Path())
 	if s.TV.MAC == "" {
 		fmt.Println(`Couldn't read the TV's MAC address, so "canape tv on" won't work. Add it to the file by hand.`)
 	}
-	t.Toast("canape is paired")
+	t.Notify("canape is paired")
 	fmt.Println(`Try: canape tv toast "hello from the couch"`)
 	return nil
 }
@@ -207,6 +194,9 @@ func pair(s *home.Here) error {
 func installApp(s *home.Here) error {
 	if s.Wifi.SSID == "" {
 		return errors.New("no Wi-Fi saved yet. Run: canape wifi set")
+	}
+	if s.TV.Brand != "" && s.TV.Brand != "lg" {
+		return errors.New("the TV app uses LG's Developer Mode, so it only works on LG TVs. Use canape wifi tv instead")
 	}
 	ip := s.TV.IP
 	if ip == "" {

@@ -368,6 +368,8 @@ func padMAC(m string) string {
 var ports = map[int]struct{ kind, label string }{
 	3000: {"LG webOS TV", "LG control (ws)"},
 	3001: {"LG webOS TV", "LG control (wss)"},
+	8001: {"Samsung TV", "Samsung control (ws)"},
+	8002: {"Samsung TV", "Samsung control (wss)"},
 	5555: {"Android TV / Google Cast", "ADB, Android network debugging"},
 	8009: {"Android TV / Google Cast", "Google Cast"},
 }
@@ -419,6 +421,12 @@ func (d *Device) Kind() string {
 		return "LG webOS TV"
 	case has("mdns:fbx-api"):
 		return "Freebox"
+	// ponytail: Samsung and Sony rules come from their published discovery
+	// identifiers, not from a real TV yet. Check them against a scan of one.
+	case strings.HasPrefix(d.Model, "Samsung") && (has("ssdp:RemoteControlReceiver") || contains(d.Open, 8001) || contains(d.Open, 8002)):
+		return "Samsung TV"
+	case has("ssdp:ScalarWebAPI") || strings.Contains(strings.ToUpper(d.Model), "BRAVIA"):
+		return "Sony TV"
 	case strings.HasPrefix(d.HW, "AppleTV"):
 		return "Apple TV"
 	case has("mdns:googlecast"), has("mdns:androidtvremote2"), contains(d.Open, 5555):

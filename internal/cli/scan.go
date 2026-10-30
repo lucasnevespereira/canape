@@ -56,8 +56,11 @@ func scan() error {
 		for _, p := range d.Open {
 			line("open", strings.TrimSpace(fmt.Sprintf("%d  %s", p, d.PortLabel(p))))
 		}
-		if d.Kind() == "LG webOS TV" {
+		switch d.Kind() {
+		case "LG webOS TV":
 			line("canape", "pair it with: canape tv pair")
+		case "Samsung TV", "Sony TV":
+			line("canape", "not supported yet. Help add it: docs/adding-a-tv.md")
 		}
 	}
 

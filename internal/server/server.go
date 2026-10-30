@@ -18,7 +18,7 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
-	"github.com/lucasnevespereira/canape/internal/tv/lg"
+	"github.com/lucasnevespereira/canape/internal/tv"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 )
 
@@ -65,40 +65,40 @@ func Run(addr string) error {
 		}
 		writeJSON(w, map[string]string{"ssid": h.Wifi.SSID})
 	}))
-	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(tv *lg.TV, _ struct{}) error {
-		return tv.Open(sv.baseURL + "/wifi")
+	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(t tv.TV, _ struct{}) error {
+		return t.Open(sv.baseURL + "/wifi")
 	})))
 	mux.HandleFunc("GET /api/tv", sv.auth(sv.tvStatus))
 	mux.HandleFunc("POST /api/tv/power", sv.auth(sv.tvPower))
-	mux.HandleFunc("POST /api/tv/volume", sv.auth(tvHandler(sv, func(tv *lg.TV, r struct {
+	mux.HandleFunc("POST /api/tv/volume", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		Volume int `json:"volume"`
 	}) error {
-		return tv.SetVolume(r.Volume)
+		return t.SetVolume(r.Volume)
 	})))
-	mux.HandleFunc("POST /api/tv/mute", sv.auth(tvHandler(sv, func(tv *lg.TV, r struct {
+	mux.HandleFunc("POST /api/tv/mute", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		Mute bool `json:"mute"`
 	}) error {
-		return tv.SetMute(r.Mute)
+		return t.SetMute(r.Mute)
 	})))
-	mux.HandleFunc("POST /api/tv/input", sv.auth(tvHandler(sv, func(tv *lg.TV, r struct {
+	mux.HandleFunc("POST /api/tv/input", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		ID string `json:"id"`
 	}) error {
-		return tv.SwitchInput(r.ID)
+		return t.SwitchInput(r.ID)
 	})))
-	mux.HandleFunc("POST /api/tv/button", sv.auth(tvHandler(sv, func(tv *lg.TV, r struct {
+	mux.HandleFunc("POST /api/tv/button", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		Name string `json:"name"`
 	}) error {
-		return tv.Button(r.Name)
+		return t.Key(strings.ToUpper(r.Name))
 	})))
-	mux.HandleFunc("POST /api/tv/type", sv.auth(tvHandler(sv, func(tv *lg.TV, r struct {
+	mux.HandleFunc("POST /api/tv/type", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		Text string `json:"text"`
 	}) error {
-		return tv.Type(r.Text)
+		return t.Type(r.Text)
 	})))
-	mux.HandleFunc("POST /api/tv/app", sv.auth(tvHandler(sv, func(tv *lg.TV, r struct {
+	mux.HandleFunc("POST /api/tv/app", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		ID string `json:"id"`
 	}) error {
-		return tv.Launch(r.ID)
+		return t.Launch(r.ID)
 	})))
 
 	fmt.Printf("canape is running for home %q. Open this link once on each of your devices (same Wi-Fi):\n\n  %s/?key=%s\n\n", h.Name, sv.baseURL, h.State.Dashboard.Key)
@@ -177,15 +177,15 @@ func (sv *server) auth(next http.HandlerFunc) http.HandlerFunc {
 func (sv *server) tvStatus(w http.ResponseWriter, r *http.Request) {
 	sv.mu.Lock()
 	defer sv.mu.Unlock()
-	tv, err := sv.here.ConnectTV()
+	t, err := sv.here.ConnectTV()
 	if err != nil {
 		// Off and unreachable look the same from here. The page offers power on.
 		writeJSON(w, home.TVStatus{})
 		return
 	}
-	defer tv.Close()
+	defer t.Close()
 
-	st, err := home.Status(tv)
+	st, err := home.Status(t)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -202,7 +202,7 @@ func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !req.On {
-		tvHandler(sv, func(tv *lg.TV, _ struct{}) error { return tv.TurnOff() })(w, r)
+		tvHandler(sv, func(t tv.TV, _ struct{}) error { return t.TurnOff() })(w, r)
 		return
 	}
 	sv.mu.Lock()
@@ -217,7 +217,7 @@ func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {
 
 // tvHandler decodes the JSON body into T, connects to the TV and runs fn. An
 // empty or already-read body leaves T at its zero value.
-func tvHandler[T any](sv *server, fn func(*lg.TV, T) error) http.HandlerFunc {
+func tvHandler[T any](sv *server, fn func(tv.TV, T) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req T
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
@@ -226,13 +226,13 @@ func tvHandler[T any](sv *server, fn func(*lg.TV, T) error) http.HandlerFunc {
 		}
 		sv.mu.Lock()
 		defer sv.mu.Unlock()
-		tv, err := sv.here.ConnectTV()
+		t, err := sv.here.ConnectTV()
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err)
 			return
 		}
-		defer tv.Close()
-		if err := fn(tv, req); err != nil {
+		defer t.Close()
+		if err := fn(t, req); err != nil {
 			writeError(w, http.StatusBadGateway, err)
 			return
 		}
