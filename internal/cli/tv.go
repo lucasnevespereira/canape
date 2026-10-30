@@ -243,7 +243,8 @@ func pair(s *home.Here) error {
 		fmt.Println("Accept the prompt on your TV (you have 60 seconds)...")
 	})
 	if err != nil {
-		fmt.Println()
+		fmt.Println("none that canape supports.")
+		otherTVs("")
 		return err
 	}
 	defer t.Close()
@@ -257,7 +258,7 @@ func pair(s *home.Here) error {
 }
 
 // installApp builds the Wi-Fi QR app and installs it through LG's Developer
-// Mode. The QR is baked in, so it works with canape stopped; run it again
+// Mode. The QR is baked in, so it works with canape stopped. Run it again
 // after changing the Wi-Fi password.
 func installApp(s *home.Here) error {
 	if s.Wifi.SSID == "" {

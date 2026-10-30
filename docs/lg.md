@@ -4,7 +4,7 @@
 
 1. **Turn on "Turn on via Wi-Fi".** Without it, canape can turn the TV off but never back on. The menu moves between webOS versions: look under Settings → All Settings → Connection → Mobile Connection Management → TV On With Mobile, or General → Mobile TV On.
 2. **Quick Start+** (General) keeps the network awake in standby, which makes turning the TV on more reliable. It uses a little more standby power.
-3. **A fixed IP** helps: give the TV a DHCP reservation on your router. If the IP changes anyway, run `canape tv pair` again.
+3. **Its IP can change.** canape finds the TV again by itself and checks it's the same TV by its MAC address. A fixed IP (a DHCP reservation on your router) just makes commands a little faster.
 
 Then run `canape setup` and accept the prompt on the TV.
 
@@ -49,7 +49,7 @@ LG calls the protocol SSAP: JSON over a WebSocket.
 - **Requests:** `{"type":"request","id":"<n>","uri":"ssap://...","payload":{...}}`. The reply carries the same `id`. `canape tv call <uri> [json]` sends any of them, e.g. `canape tv call audio/getVolume`.
 - **Remote keys** go through a second socket, from `ssap://com.webos.service.networkinput/getPointerInputSocket`, as plain-text frames: `type:button\nname:HOME\n\n`.
 - **Typing:** `ssap://com.webos.service.ime/insertText`, into whatever field has focus.
-- **Inputs are apps.** The foreground app is `com.webos.app.hdmi1` when HDMI 1 is on screen; canape maps it back to the input ID `HDMI_1`.
+- **Inputs are apps.** The foreground app is `com.webos.app.hdmi1` when HDMI 1 is on screen. canape maps it back to the input ID `HDMI_1`.
 - **Turning on isn't SSAP:** a TV that's off has no socket. canape sends a Wake-on-LAN packet to its MAC.
 
 Useful URIs: `system/turnOff`, `audio/getVolume`, `audio/setVolume`, `audio/setMute`, `tv/getExternalInputList`, `tv/switchInput`, `com.webos.applicationManager/listApps`, `com.webos.applicationManager/getForegroundAppInfo`, `system.launcher/launch`, `system.launcher/open`, `system.notifications/createToast`.

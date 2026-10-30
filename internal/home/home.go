@@ -114,11 +114,12 @@ func (h *Here) PairTV(found func(brand, ip string), prompted func()) (tv.TV, err
 		}
 		return t, nil
 	}
-	return nil, fmt.Errorf("no TV found on this network. Is it on? (%w)", errors.Join(errs...))
+	return nil, fmt.Errorf("no supported TV answered (%w)", errors.Join(errs...))
 }
 
 // ConnectTV dials the paired TV and authenticates with the saved key. If the
 // TV forgot canape, it shows the accept prompt again and the new key is saved.
+// If the TV moved to another IP, it's found again and the new IP is saved.
 func (h *Here) ConnectTV() (tv.TV, error) {
 	if h.TV.Key == "" {
 		return nil, fmt.Errorf("no TV paired on this network (%s). Run: canape setup", h.Name)
@@ -127,17 +128,25 @@ func (h *Here) ConnectTV() (tv.TV, error) {
 	if !ok {
 		return nil, fmt.Errorf("this canape doesn't support %q TVs", h.TV.Brand)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	t, key, err := d.connect(ctx, h.TV.IP, h.TV.Key, func() {
+	prompted := func() {
 		// stderr: stdout carries the protocol under `canape mcp`.
 		fmt.Fprintln(os.Stderr, "The TV forgot canape. Accept the prompt on screen...")
-	})
-	if err != nil {
-		return nil, fmt.Errorf("%w\nIs the TV on? If its IP changed, run: canape tv pair", err)
 	}
-	if key != h.TV.Key {
-		h.TV.Key = key
+	ip := h.TV.IP
+	t, key, err := dialTV(d, ip, h.TV.Key, prompted)
+	if err != nil && h.TV.MAC != "" {
+		// The router may have given the TV a new IP. Look for it, and only
+		// trust a TV with the MAC saved at pairing, not the neighbour's.
+		if found, derr := d.discover(1500 * time.Millisecond); derr == nil && found != ip && discovery.MAC(found) == h.TV.MAC {
+			ip = found
+			t, key, err = dialTV(d, ip, h.TV.Key, prompted)
+		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w\nIs the TV on? Turn it on with: canape tv on", err)
+	}
+	if key != h.TV.Key || ip != h.TV.IP {
+		h.TV.Key, h.TV.IP = key, ip
 		if err := h.Save(); err != nil {
 			t.Close()
 			return nil, err
@@ -146,7 +155,15 @@ func (h *Here) ConnectTV() (tv.TV, error) {
 	return t, nil
 }
 
-// WakeTV turns the TV on with Wake-on-LAN; a TV that's off can't be dialed.
+// dialTV gives the TV 2 seconds to answer. On a home network it takes well
+// under half a second, so a longer wait only makes "the TV is off" slow.
+func dialTV(d driver, ip, key string, prompted func()) (tv.TV, string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	return d.connect(ctx, ip, key, prompted)
+}
+
+// WakeTV turns the TV on with Wake-on-LAN. A TV that's off can't be dialed.
 func (h *Here) WakeTV() error {
 	if h.TV.MAC == "" {
 		return fmt.Errorf("no TV paired on this network (%s). Run: canape setup (with the TV on)", h.Name)

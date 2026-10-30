@@ -44,7 +44,9 @@ func setup() error {
 			fmt.Println("   Accept the prompt on your TV (you have 60 seconds)...")
 		})
 		if err != nil {
-			fmt.Printf("\n   %v\n   Skipped. Turn the TV on and run canape setup again.\n", err)
+			fmt.Println("none that canape supports.")
+			otherTVs("   ")
+			fmt.Println("   Skipped. If your TV was off, turn it on and run canape setup again.")
 		} else {
 			t.Notify("canape is paired")
 			t.Close()
@@ -82,6 +84,22 @@ func setup() error {
 	fmt.Println("  canape wifi tv      the Wi-Fi QR on the TV")
 	fmt.Println("  canape serve        phone dashboard")
 	return nil
+}
+
+// otherTVs names the TVs on the network that canape can't drive yet, so a
+// failed pairing doesn't look like an empty network.
+func otherTVs(indent string) {
+	res, err := discovery.Scan()
+	if err != nil {
+		return
+	}
+	for _, d := range res.Devices {
+		switch k := d.Kind(); k {
+		case "Samsung TV", "Sony TV", "Android TV / Google Cast", "Apple TV", "Freebox Player":
+			fmt.Printf("%sFound a %s at %s. canape can't control it yet.\n", indent, k, d.IP)
+			fmt.Printf("%sWant to help add it? See docs/adding-a-tv.md\n", indent)
+		}
+	}
 }
 
 func nameTaken(h *home.Here, name string) bool {
