@@ -6,6 +6,8 @@ A zero-setup remote for the network you're on: the TV, the Wi-Fi and the devices
 
 Tagline: *Control the TV and share the Wi-Fi on any network. No hub, one command, works with Claude.*
 
+Who it's for: someone who has never heard of an IP address. Plain words, every problem with its next step, no terminal for everyday use, safe by default. The principles are at the top of ROADMAP.md.
+
 What sets canape apart, in the order users care: no hub and one command (`canape setup`), three ways to use it (terminal, phone, Claude), and it works in any home you walk into.
 
 **The filter for every feature:** it belongs in canape if it works in one command on a network canape just joined, without a server that has to run all the time. The dashboard is fine because it's optional.
