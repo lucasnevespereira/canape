@@ -28,7 +28,7 @@ var indexHTML []byte
 type server struct {
 	// ponytail: one lock for every TV request. It keeps one socket open at a
 	// time and guards the state file, which ConnectTV may rewrite. Fine for a
-	// household; split it if requests ever queue up.
+	// household. Split it if requests ever queue up.
 	mu      sync.Mutex
 	here    *home.Here
 	baseURL string // how the TV reaches this server

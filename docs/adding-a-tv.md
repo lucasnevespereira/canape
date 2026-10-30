@@ -12,9 +12,9 @@ Create `internal/tv/<brand>/` with:
 
 - a type whose methods satisfy `tv.TV`. Add `var _ tv.TV = (*TV)(nil)` so the compiler checks it.
 - `Discover(timeout time.Duration) (ip string, err error)`: find the TV on the network.
-- `Connect(ctx context.Context, ip, key string, prompted func()) (*TV, string, error)`: dial and authenticate. With an empty key, the TV should ask the user to accept canape; call `prompted` while it waits, and return the key to save.
+- `Connect(ctx context.Context, ip, key string, prompted func()) (*TV, string, error)`: dial and authenticate. With an empty key, the TV should ask the user to accept canape. Call `prompted` while it waits, and return the key to save.
 
-Things a TV can't do return `tv.ErrUnsupported`. Remote keys arrive as `tv.Keys` (`HOME`, `BACK`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `ENTER`); map them to the brand's codes. `Current()` returns the ID of the input or app on screen, matching the IDs `Inputs()` and `Apps()` return. Turning on is shared: `tv.Wake` sends Wake-on-LAN to the MAC saved at pairing.
+Things a TV can't do return `tv.ErrUnsupported`. Remote keys arrive as `tv.Keys` (`HOME`, `BACK`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `ENTER`). Map them to the brand's codes. `Current()` returns the ID of the input or app on screen, matching the IDs `Inputs()` and `Apps()` return. Turning on is shared: `tv.Wake` sends Wake-on-LAN to the MAC saved at pairing.
 
 Keep brand-only extras in your package, like `lg.TV.Call`.
 

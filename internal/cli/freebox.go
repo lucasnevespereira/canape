@@ -22,7 +22,7 @@ func freeboxPairCommand() error {
 	return nil
 }
 
-// freeboxPair asks the box for an app token; the owner confirms on its screen.
+// freeboxPair asks the box for an app token. The owner confirms on its screen.
 func freeboxPair(h *home.Here) error {
 	device, _ := os.Hostname()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

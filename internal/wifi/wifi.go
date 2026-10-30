@@ -123,7 +123,7 @@ func Page(w io.Writer, ssid, password string) error {
 // ShowOnTV puts the page on a TV without a running server: a throwaway one
 // on a random port answers the TV's single request, then stops. The QR is
 // inline in the page, so it stays on screen afterwards. host is this
-// machine's LAN address; open asks the TV's browser to load a URL.
+// machine's LAN address, and open asks the TV's browser to load a URL.
 func ShowOnTV(ssid, password, host string, open func(url string) error) error {
 	ln, err := net.Listen("tcp", ":0")
 	if err != nil {

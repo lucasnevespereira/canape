@@ -66,7 +66,7 @@ func Dial(ctx context.Context, ip string) (*TV, error) {
 func (t *TV) Close() error { return t.conn.Close(websocket.StatusNormalClosure, "") }
 
 // Connect dials the TV and registers with key. With an empty or forgotten
-// key the TV asks the user to accept canape; the key to save comes back.
+// key the TV asks the user to accept canape, and the key to save comes back.
 func Connect(ctx context.Context, ip, key string, prompted func()) (*TV, string, error) {
 	t, err := Dial(ctx, ip)
 	if err != nil {

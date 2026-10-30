@@ -109,7 +109,7 @@
       </button>
       <div class="volume">
         <button id="vol-down" aria-label="Volume down">−</button>
-        <output id="vol">–</output>
+        <output id="vol">…</output>
         <button id="vol-up" aria-label="Volume up">+</button>
       </div>
       <button id="mute" aria-pressed="false">Mute</button>
@@ -219,7 +219,7 @@ async function act(path, body) {
   refresh();
 }
 
-// Taps change the number right away; the TV gets the final value once tapping pauses.
+// Taps change the number right away. The TV gets the final value once tapping pauses.
 let volTimer;
 function changeVolume(delta) {
   tv.volume = Math.max(0, Math.min(100, tv.volume + delta));

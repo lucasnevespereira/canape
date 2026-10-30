@@ -19,7 +19,7 @@ import (
 )
 
 // ponytail: plain HTTP. The box also serves HTTPS, but with Free's own CA,
-// which would have to be bundled. Fine on the LAN; bundle the CA if canape
+// which would have to be bundled. Fine on the LAN. Bundle the CA if canape
 // ever talks to the box from outside.
 const host = "http://mafreebox.freebox.fr"
 
@@ -69,7 +69,7 @@ func New(appToken string) (*Client, error) {
 }
 
 // Authorize asks the box for an app token. The owner has to confirm on the
-// box's screen; waiting is called once the request is shown there.
+// box's screen, and waiting is called once the request is shown there.
 func Authorize(ctx context.Context, appName, version, device string, waiting func()) (string, error) {
 	base, err := apiBase()
 	if err != nil {
@@ -232,7 +232,7 @@ type Host struct {
 
 func (h Host) MAC() string { return h.L2.ID }
 
-// IPv4 prefers the address in use; a device keeps old ones in the list.
+// IPv4 prefers the address in use. A device keeps old ones in the list.
 func (h Host) IPv4() string {
 	ip := ""
 	for _, l := range h.L3 {

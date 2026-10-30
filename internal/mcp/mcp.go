@@ -22,7 +22,7 @@ type reply struct {
 }
 
 type nameInput struct {
-	Name string `json:"name" jsonschema:"name as listed by tv_status; loose matching works, e.g. hdmi1, apple, youtube"`
+	Name string `json:"name" jsonschema:"name as listed by tv_status. Loose matching works, e.g. hdmi1, apple, youtube"`
 }
 
 // Run serves the CLI's functions as MCP tools over stdio.

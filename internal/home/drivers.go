@@ -15,7 +15,7 @@ type driver struct {
 	name     string // shown to the user
 	discover func(timeout time.Duration) (ip string, err error)
 	// connect dials and authenticates. With an empty or forgotten key the TV
-	// asks the user to accept canape; the key to save comes back.
+	// asks the user to accept canape, and the key to save comes back.
 	connect func(ctx context.Context, ip, key string, prompted func()) (tv.TV, string, error)
 }
 

@@ -48,7 +48,7 @@ type Result struct {
 	Devices []*Device // sorted by IP
 }
 
-// LocalIP returns this machine's LAN address. Dialing UDP sends nothing; it
+// LocalIP returns this machine's LAN address. Dialing UDP sends nothing, it
 // only picks the outgoing interface.
 func LocalIP() string {
 	c, err := net.Dial("udp", "192.0.2.1:9")
@@ -181,7 +181,7 @@ func (s *scanner) ssdp() {
 			d.Server = v
 		}
 		s.mu.Unlock()
-		// LG serves several descriptions; only the second-screen one has the real model number.
+		// LG serves several descriptions. Only the second-screen one has the real model number.
 		if _, ok := locations[ip]; !ok || st == "webos-second-screen" {
 			locations[ip] = resp.Header.Get("Location")
 		}

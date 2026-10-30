@@ -65,7 +65,7 @@ func InstallApp(ip string, a WebApp) error {
 		}
 	}
 
-	// Modify keeps the key ares saved earlier; add only the first time.
+	// Modify keeps the key ares saved earlier. Add only the first time.
 	list, _ := exec.Command("ares-setup-device", "--list").Output()
 	mode := "-a"
 	if strings.Contains(string(list), aresDevice) {

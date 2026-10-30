@@ -39,7 +39,7 @@ type State struct {
 	// network without needing its name.
 	Homes     map[string]*Home `json:"homes"`
 	Dashboard struct {
-		Key string `json:"key"` // in the login link; a device that opened it once keeps it as a cookie
+		Key string `json:"key"` // in the login link. A device that opened it once keeps it as a cookie
 	} `json:"dashboard"`
 
 	// Legacy is the single home the file held before homes existed. It can
