@@ -26,12 +26,21 @@ type Freebox struct {
 	AppToken string `json:"app_token"`
 }
 
+// Computer is one the user chose to wake from canape. Routers remember
+// every device they ever saw, so canape only wakes the ones picked.
+type Computer struct {
+	Name string `json:"name"`
+	MAC  string `json:"mac"`
+	IP   string `json:"ip"` // last known, for the subnet broadcast
+}
+
 // Home is everything canape knows about one network.
 type Home struct {
-	Name    string  `json:"name"`
-	TV      TV      `json:"tv"`
-	Wifi    Wifi    `json:"wifi"`
-	Freebox Freebox `json:"freebox"`
+	Name      string     `json:"name"`
+	TV        TV         `json:"tv"`
+	Wifi      Wifi       `json:"wifi"`
+	Freebox   Freebox    `json:"freebox"`
+	Computers []Computer `json:"computers,omitempty"`
 }
 
 type State struct {

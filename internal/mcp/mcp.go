@@ -184,6 +184,23 @@ func Run() error {
 	})
 
 	sdk.AddTool(s, &sdk.Tool{
+		Name:        "wake_computer",
+		Description: "Wake a sleeping computer the user saved for waking (with canape wake add), by its name.",
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
+		Name string `json:"name" jsonschema:"the saved computer's name; loose matching works"`
+	}) (*sdk.CallToolResult, reply, error) {
+		s, err := home.Load()
+		if err != nil {
+			return nil, reply{}, err
+		}
+		c, err := s.WakeComputer(in.Name)
+		if err != nil {
+			return nil, reply{}, err
+		}
+		return nil, reply{"Wake-on-LAN sent to " + c.Name + ". It can take a minute to come up."}, nil
+	})
+
+	sdk.AddTool(s, &sdk.Tool{
 		Name:        "network_devices",
 		Description: "Devices on the home network, from the Freebox: name, IP, MAC, vendor, online now or last seen.",
 		Annotations: readOnly,

@@ -97,6 +97,18 @@ The dashboard has the same buttons on the computer's page. They go to the app in
 
 The first time, macOS asks to allow the app canape runs in under **System Settings > Privacy & Security > Accessibility**. Volume works without it. macOS only for now: Linux and Windows are on the roadmap.
 
+## Wake a computer
+
+canape can wake a sleeping computer on the network, like a desktop PC or a home server. Save it once while it's on, then wake it anytime:
+
+```bash
+canape wake add              # pick it from what's online, give it a name
+canape wake desktop          # wake it
+canape wake                  # saved computers, awake or asleep
+```
+
+The computer has to allow it: "Wake on LAN" in a PC's BIOS, "Wake for network access" in a Mac's settings. It works best over a cable. Laptops on Wi-Fi usually can't be woken. canape itself has to be running somewhere awake, like a Pi or a desktop that stays on.
+
 ## Ask Claude
 
 `canape mcp` is an MCP server. Claude starts it when needed, so nothing has to keep running.
@@ -113,7 +125,7 @@ For Claude Desktop, add this to its config (Settings → Developer → Edit Conf
 
 Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
 
-Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `computer_key`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
+Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `computer_key`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Several homes
 

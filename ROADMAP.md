@@ -14,6 +14,7 @@ Where canape is going, in order. Every item passes the filter in [AGENTS.md](AGE
 - [x] Homebrew formula updated automatically on release (v0.2.0)
 - [x] Computer remote on macOS: play, pause, skip, volume, full screen on the machine canape runs on (CLI, dashboard, MCP)
 - [x] Dashboard organized by device: a page per device, phone tabs built from the devices with More for the rest, sidebar on a computer
+- [x] `canape wake`: wake a computer the user saved (CLI and Claude)
 - [x] Claude through MCP (`canape mcp`)
 - [x] Homes: one setup per network, picked automatically
 - [x] `canape setup`, the status screen, help grouped by task
@@ -34,13 +35,21 @@ Still to check on real hardware before or right after the release:
 - **Android TV**, through ADB or the Android TV remote protocol. Covers projectors like XGIMI and the Freebox Player.
 - **Run in the background.** `canape serve` as a service (launchd on macOS, systemd on Linux and Pi).
 
+## Network utility
+
+What makes canape a useful helper for the network you're on. Each works in one command, with nothing running in the background.
+
+- **Is the internet down, or just the Wi-Fi?** `canape check`: router reachable, internet reachable, DNS answering, with the answer in plain words.
+- **What's this device?** Name devices from their maker (the first half of a MAC names it) and what they announce, so "lwip0" reads "Tuya smart plug".
+- **Find a device:** `canape find printer` gives its IP and opens its web page if it has one (printers, cameras, home servers, routers).
+- **Name devices once:** "PETLIBRO-Air Smart Feeder" becomes "Cat feeder", saved in the home, shown everywhere.
+- **New device alert,** while `canape serve` runs: "a new device joined: iPhone".
+- **Wi-Fi signal per device** and **internet speed and status** from the Freebox.
+- **Wake a computer** from the dashboard, when someone needs it (the command exists).
+
 ## Later
 
 - Computer keys on Linux (playerctl, xdotool) and Windows (media keys)
-
-- "What's this device?" in plain words, and an alert when a new device joins
-- Wake a computer on the network
-- Router speed and connection status (Freebox)
 - Named scenes, like "movie mode": TV on, Apple TV input, volume 15
 - Hand lights and sensors to Home Assistant when a home already runs it
 - Chromecast and Apple TV

@@ -40,6 +40,12 @@ Computer (the one canape runs on, macOS for now)
   canape pc mute               mute or unmute the computer
   canape pc fullscreen | esc   enter or leave full screen
 
+Wake a computer
+  canape wake add              save a computer for waking (it must be on now)
+  canape wake <name>           wake a saved computer
+  canape wake                  list saved computers, awake or asleep
+  canape wake forget <name>    stop listing it
+
 Wi-Fi
   canape wifi                  the Wi-Fi QR code, in the terminal
   canape wifi tv               the Wi-Fi QR code, on the TV
@@ -89,6 +95,8 @@ func Run(args []string) int {
 		err = wifiCommand(rest)
 	case "pc", "computer":
 		err = pcCommand(rest)
+	case "wake":
+		err = wakeCommand(rest)
 	case "scan":
 		err = scan()
 	case "devices":
