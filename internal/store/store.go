@@ -57,12 +57,8 @@ type State struct {
 	Legacy *Home `json:"-"`
 }
 
-// Path is ~/.canape/state.json, the same on every system, or
-// $CANAPE_DATA/state.json when set (Docker, tests).
+// Path is ~/.canape/state.json, the same on every system.
 func Path() string {
-	if dir := os.Getenv("CANAPE_DATA"); dir != "" {
-		return filepath.Join(dir, "state.json")
-	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		home = "."
@@ -82,7 +78,7 @@ func oldPath() string {
 func Load() (*State, error) {
 	s := &State{Homes: map[string]*Home{}}
 	b, err := os.ReadFile(Path())
-	if errors.Is(err, fs.ErrNotExist) && os.Getenv("CANAPE_DATA") == "" {
+	if errors.Is(err, fs.ErrNotExist) {
 		b, err = moveOld()
 	}
 	if errors.Is(err, fs.ErrNotExist) {

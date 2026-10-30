@@ -34,6 +34,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - The dashboard added to an iPhone home screen: it should log itself in on first launch
 - Play/pause with the space bar and Click the video on a web player
 - Pressing Enter to skip the Freebox pairing in `canape setup`
+- `install.sh` on a Raspberry Pi (only run on a Mac so far)
 - The network report with a VPN on (it should still run, without a home)
 - The network report on a network without router access (a friend's box, a hotel), and on Linux where the Wi-Fi line is empty for now
 
