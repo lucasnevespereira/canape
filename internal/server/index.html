@@ -147,6 +147,26 @@
   .wifi-hint { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 14px; }
   .wifi-actions { display: flex; justify-content: center; margin-top: 18px; }
 
+  /* Computer: the machine streaming to the TV */
+  .pc-name { margin: 6px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+  .transport { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 18px 0; }
+  .play {
+    width: 72px; height: 72px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center; transition: transform 80ms ease, filter 120ms ease;
+  }
+  .play svg { width: 28px; height: 28px; }
+  .play:hover { filter: brightness(1.06); }
+  .play:active, .play.pressed { transform: scale(0.95); }
+  .pc-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .hrocker {
+    display: flex; align-items: center; height: 46px; border-radius: 23px; border: 1px solid var(--line); background: var(--surface); overflow: hidden;
+  }
+  .hrocker button { width: 46px; height: 100%; border: 0; background: transparent; font-size: 20px; color: var(--muted); }
+  .hrocker button:hover { color: var(--text); }
+  .hrocker button:active, .hrocker button.pressed { background: var(--surface-2); color: var(--text); }
+  .hrocker output { min-width: 3ch; text-align: center; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pc-extra { display: flex; justify-content: center; gap: 20px; margin: 16px 0 0; }
+
   /* Network: folded to one line until opened */
   details summary {
     display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; padding: 6px 0; font-weight: 500;
@@ -163,21 +183,22 @@
 
   /* Tabs on a phone */
   nav {
-    position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex;
     padding: 6px 12px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line);
     background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   }
-  nav button { border: 0; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--muted); }
+  nav button { flex: 1; border: 0; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--muted); }
   nav svg { width: 22px; height: 22px; }
   nav button[aria-current="page"] { color: var(--accent); }
 
   /* A computer: remote on the left, Wi-Fi and network stacked on the right */
   @media (min-width: 900px) {
     main {
-      display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-rows: auto 1fr;
+      display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr;
       gap: 20px; padding-bottom: 40px; align-items: start;
     }
-    #panel-remote { grid-row: span 2; }
+    #panel-remote { grid-row: span 3; }
+    .hrocker { background: var(--bg); }
     .panel {
       display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 24px 22px;
     }
@@ -212,6 +233,11 @@
   <symbol id="i-next" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></symbol>
   <symbol id="i-remote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><circle cx="12" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M10 14h.01M14 14h.01M10 17h.01M14 17h.01"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-playpause" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5.5v13l9-6.5-9-6.5ZM15 5.5h2.5v13H15zM19.5 5.5H22v13h-2.5z"/></symbol>
+  <symbol id="i-rewind" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M11 7 6 12l5 5M18 7l-5 5 5 5"/></symbol>
+  <symbol id="i-forward" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m13 7 5 5-5 5M6 7l5 5-5 5"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-computer" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4 5h16v11H4zM2 19h20"/></symbol>
   <symbol id="i-network" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4"/></symbol>
 </svg>
 
@@ -301,6 +327,29 @@
     </div>
   </section>
 
+  <section class="panel" id="panel-computer" hidden>
+    <h2 class="card-title">Computer</h2>
+    <p class="pc-name" id="pc-name"></p>
+    <div class="transport">
+      <button class="icon-btn press" data-pc="back" aria-label="Skip back" title="Skip back (the player's left arrow)"><svg><use href="#i-rewind"/></svg></button>
+      <button class="play press" data-pc="playpause" aria-label="Play or pause" title="Play or pause"><svg><use href="#i-playpause"/></svg></button>
+      <button class="icon-btn press" data-pc="forward" aria-label="Skip ahead" title="Skip ahead (the player's right arrow)"><svg><use href="#i-forward"/></svg></button>
+    </div>
+    <div class="pc-row">
+      <div class="hrocker" role="group" aria-label="Computer volume">
+        <button class="press" data-pc="volume-down" aria-label="Volume down">−</button>
+        <output id="pc-vol">…</output>
+        <button class="press" data-pc="volume-up" aria-label="Volume up">+</button>
+      </div>
+      <button class="icon-btn" data-pc="mute" id="pc-mute" aria-pressed="false" aria-label="Mute the computer" title="Mute"><svg><use href="#i-mute"/></svg></button>
+      <button class="icon-btn" data-pc="fullscreen" aria-label="Full screen" title="Full screen (F)"><svg><use href="#i-full"/></svg></button>
+    </div>
+    <p class="pc-extra">
+      <button class="link" data-pc="space" title="Some players only pause with the space bar">Space bar</button>
+      <button class="link" data-pc="escape" title="Leaves full screen">Exit full screen</button>
+    </p>
+  </section>
+
   <section class="panel" id="panel-network">
     <h2 class="card-title">Network</h2>
     <details id="net">
@@ -313,6 +362,7 @@
 
 <nav aria-label="Sections">
   <button data-tab="remote"><svg><use href="#i-remote"/></svg>Remote</button>
+  <button data-tab="computer" hidden><svg><use href="#i-computer"/></svg>Computer</button>
   <button data-tab="wifi"><svg><use href="#i-wifi"/></svg>Wi-Fi</button>
   <button data-tab="network"><svg><use href="#i-network"/></svg>Network</button>
 </nav>
@@ -596,11 +646,39 @@ document.addEventListener("keydown", (e) => {
 
 for (const b of document.querySelectorAll("nav button")) b.onclick = () => setTab(b.dataset.tab);
 
+// The computer canape runs on, usually the one streaming to the TV.
+function renderComputer(c) {
+  $("#panel-computer").hidden = !c.supported;
+  document.querySelector('nav [data-tab="computer"]').hidden = !c.supported;
+  if (!c.supported) {
+    if (state.tab === "computer") setTab("remote");
+    return;
+  }
+  $("#pc-name").textContent = c.name;
+  $("#pc-vol").textContent = c.volume ?? "…";
+  $("#pc-mute").setAttribute("aria-pressed", String(!!c.muted));
+}
+async function loadComputer() {
+  try { renderComputer(await api("/api/computer")); } catch (e) { fail(e); }
+}
+let pcBusy = false;
+async function pcKey(key) {
+  if (pcBusy) return;
+  pcBusy = true;
+  try { renderComputer(await api("/api/computer/key", { key })); } catch (e) { fail(e); }
+  pcBusy = false;
+}
+for (const b of document.querySelectorAll("[data-pc]")) {
+  if (["back", "forward", "volume-up", "volume-down"].includes(b.dataset.pc)) holdable(b, () => pcKey(b.dataset.pc));
+  else b.onclick = () => pcKey(b.dataset.pc);
+}
+
 let saved = null;
 try { saved = localStorage.getItem("tab"); } catch (e) {}
-setTab(["remote", "wifi", "network"].includes(location.hash.slice(1)) ? location.hash.slice(1) : saved || "remote");
+setTab(["remote", "computer", "wifi", "network"].includes(location.hash.slice(1)) ? location.hash.slice(1) : saved || "remote");
 
 loadHome().then(refreshTV);
+loadComputer();
 // The count shows in the folded line on a computer, so fetch it up front.
 if (wide.matches) loadDevices();
 

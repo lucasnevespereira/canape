@@ -13,9 +13,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 
+	"github.com/lucasnevespereira/canape/internal/computer"
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/qrcode"
@@ -62,6 +64,8 @@ func Run(addr string) error {
 	mux.HandleFunc("GET /icons/{file}", icon)
 	mux.HandleFunc("GET /api/home", sv.auth(homeInfo))
 	mux.HandleFunc("GET /api/devices", sv.auth(devices))
+	mux.HandleFunc("GET /api/computer", sv.auth(computerInfo))
+	mux.HandleFunc("POST /api/computer/key", sv.auth(computerKey))
 	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(t tv.TV, _ struct{}) error {
 		return t.Open(sv.baseURL + "/wifi")
 	})))
@@ -201,6 +205,31 @@ func devices(w http.ResponseWriter, r *http.Request) {
 		list = append(list, device{d.Name, d.IPv4(), d.Vendor})
 	}
 	writeJSON(w, list)
+}
+
+// computerInfo describes the machine canape runs on, the one streaming to
+// the TV. The dashboard hides its Computer section when Supported is false.
+func computerInfo(w http.ResponseWriter, r *http.Request) {
+	info := map[string]any{"supported": computer.Supported(), "name": computer.Name()}
+	if v, err := computer.GetVolume(); err == nil {
+		info["volume"], info["muted"] = v.Level, v.Muted
+	}
+	writeJSON(w, info)
+}
+
+func computerKey(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Key computer.Key `json:"key"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !slices.Contains(computer.Keys, req.Key) {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("unknown key %q", req.Key))
+		return
+	}
+	if err := computer.Press(req.Key); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	computerInfo(w, r) // the page shows the new volume
 }
 
 // manifest makes "Add to Home Screen" open canape full screen with its icon.

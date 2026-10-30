@@ -20,6 +20,7 @@ Supported today: LG webOS TVs, Freebox routers. Protocol notes live in `docs/` (
 - **Runs inside the network, never on a VPS.** TVs only take commands from the LAN, and Wake-on-LAN is a LAN broadcast. Remote access is Tailscale's job.
 - **One home per network, keyed by the router's MAC.** `home.Load()` reads the default gateway's MAC from the ARP table (no permission needed, while recent macOS hides the Wi-Fi name from CLI tools) and returns that network's home. A new network gets an in-memory home, saved only once something is paired or `canape setup` runs, so read commands never add entries. Nothing ever overwrites another home. A pre-homes `state.json` migrates into a home named "home".
 - **TV brands behind one interface.** `tv.TV` is what canape does with any TV. A brand is a driver package under `internal/tv/` plus one entry in `internal/home/drivers.go`. Unsupported actions return `tv.ErrUnsupported`. Wake-on-LAN is shared (`tv.Wake`). Brand-only extras stay in the driver (`lg.TV.Call`, the LG Developer Mode app). Routers aren't abstracted: only the Freebox exists. How to add a brand: `docs/adding-a-tv.md`.
+- **Computer remote, not a computer agent.** canape presses keys only on the machine it runs on, usually the one streaming to the TV. Controlling another computer would need canape running there too: a background agent fails the Direction filter. Key events need the macOS Accessibility permission (macOS prompts once). Volume uses AppleScript and needs none.
 - **Fixed Wi-Fi QR, never router writes.** canape reads the SSID from the router, the user types the password once, it lives only in `state.json`. Generating Freebox guest keys would need the "settings" permission, which can change any router setting. The user chose not to grant it.
 - **Stdlib first.** Dependencies only where the stdlib has nothing: `coder/websocket` (for LG, because it sends no `Origin` header and LG TVs reject one), `rsc.io/qr`, `x/net/dns/dnsmessage` (mDNS), the MCP go-sdk. Each new one needs a reason.
 - **One binary, page embedded.** No frontend build. `internal/wifi/page.html` uses old CSS only: webOS 4's browser is an old Chromium (no `min()`, no flex `gap`).
@@ -33,6 +34,7 @@ main.go                    calls cmd.Run, nothing else
 cmd/                       the canape command: arguments and terminal output. setup.go is the guided flow
 internal/home/             the current network's home: Load/Save, PairTV/ConnectTV/WakeTV via drivers.go, Status, Devices
 internal/store/            state.json: homes keyed by router MAC, dashboard key, legacy migration
+internal/computer/         keys on the machine canape runs on (play/pause media key, arrows, F, Esc, volume). macOS via osascript and JavaScript for Automation, so no cgo. Other systems return ErrUnsupported
 internal/discovery/        network scan (SSDP, mDNS, ARP, reverse DNS, control ports), Router(), MAC(), LocalIP(), FindFreebox()
 internal/tv/               tv.TV interface, shared types, key names, Wake-on-LAN, name matching (Match)
 internal/tv/lg/            LG driver. app.go installs a web app through Developer Mode (wraps LG's ares CLI)

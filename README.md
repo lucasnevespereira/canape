@@ -44,6 +44,7 @@ On a new network, start with `canape setup`. Run `canape scan` when you're curio
 ## What it does
 
 - **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins.
+- **The computer streaming to the TV:** play, pause, skip back or ahead, volume and full screen on the Mac canape runs on, from your phone. No getting up to pause the movie.
 - **Wi-Fi QR code:** in the terminal, on the TV, or on your phone. Guests scan it and join. canape reads the network name from the router and you type the password once. It never changes your router's settings.
 - **Network:** `canape scan` lists every device on the network, `canape devices` shows who's online (Freebox).
 - **Web dashboard:** the TV remote, inputs, apps and the Wi-Fi QR in any browser, made for your phone.
@@ -80,6 +81,21 @@ To use it like an app, add it to your home screen (Share → Add to Home Screen 
 
 The dashboard only runs while `canape serve` does. Most things work without it: `canape wifi tv` puts the Wi-Fi QR on the TV in one command.
 
+## The computer streaming to the TV
+
+When a movie plays on your Mac and shows on the TV, canape can pause it from your phone. It presses keys on the computer it runs on:
+
+```bash
+canape pc play               # play or pause whatever is playing
+canape pc back               # skip back (the player's left arrow)
+canape pc volume up
+canape pc fullscreen
+```
+
+The dashboard has the same buttons under **Computer**. Play and pause use the media key, so they work with Spotify, Music, or a video in a browser. The arrows and full screen go to the app in front, so keep the player in front.
+
+The first time, macOS asks to allow the app canape runs in under **System Settings > Privacy & Security > Accessibility**. Volume works without it. macOS only for now: Linux and Windows are on the roadmap.
+
 ## Ask Claude
 
 `canape mcp` is an MCP server. Claude starts it when needed, so nothing has to keep running.
@@ -96,7 +112,7 @@ For Claude Desktop, add this to its config (Settings → Developer → Edit Conf
 
 Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
 
-Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
+Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `computer_key`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Several homes
 

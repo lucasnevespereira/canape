@@ -12,6 +12,7 @@ Where canape is going, in order. Every item passes the filter in [AGENTS.md](AGE
 - [x] Dashboard v2: Remote, Wi-Fi and Network tabs on a phone, side by side on a computer, a remote-style dial, keyboard shortcuts, add to home screen
 - [x] Quieter dashboard: graphite theme, only 8 apps until "Show all", network folded to one line, Wi-Fi password hidden until "Show"
 - [x] Homebrew formula updated automatically on release (v0.2.0)
+- [x] Computer remote on macOS: play, pause, skip, volume, full screen on the machine canape runs on (CLI, dashboard, MCP)
 - [x] Claude through MCP (`canape mcp`)
 - [x] Homes: one setup per network, picked automatically
 - [x] `canape setup`, the status screen, help grouped by task
@@ -24,6 +25,7 @@ Still to check on real hardware before or right after the release:
 - `canape setup` on a second network (only simulated so far)
 - The MCP tools from Claude itself (only driven by raw test messages so far)
 - The dashboard added to an iPhone home screen: it should log itself in on first launch
+- Play/pause, skip and full screen with a real movie (volume and the friendly name are checked)
 
 ## Next
 
@@ -32,6 +34,8 @@ Still to check on real hardware before or right after the release:
 - **Run in the background.** `canape serve` as a service (launchd on macOS, systemd on Linux and Pi).
 
 ## Later
+
+- Computer keys on Linux (playerctl, xdotool) and Windows (media keys)
 
 - "What's this device?" in plain words, and an alert when a new device joins
 - Wake a computer on the network

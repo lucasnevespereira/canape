@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lucasnevespereira/canape/internal/computer"
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/tv"
@@ -165,6 +166,22 @@ func Run() error {
 					wifi.ShowOnTV(s.Wifi.SSID, s.Wifi.Password, discovery.LocalIP(), t.Open)
 			})
 		})
+
+	sdk.AddTool(s, &sdk.Tool{
+		Name:        "computer_key",
+		Description: "Press a key on the computer running canape, usually the one streaming to the TV: pause the movie, skip back or forward, change its volume. macOS only for now.",
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
+		Key string `json:"key" jsonschema:"one of playpause, space, back, forward, fullscreen, escape, volume-up, volume-down, mute"`
+	}) (*sdk.CallToolResult, reply, error) {
+		key := computer.Key(in.Key)
+		if !slices.Contains(computer.Keys, key) {
+			return nil, reply{}, fmt.Errorf("unknown key %q", in.Key)
+		}
+		if err := computer.Press(key); err != nil {
+			return nil, reply{}, err
+		}
+		return nil, reply{"Pressed " + in.Key + " on " + computer.Name() + "."}, nil
+	})
 
 	sdk.AddTool(s, &sdk.Tool{
 		Name:        "network_devices",
