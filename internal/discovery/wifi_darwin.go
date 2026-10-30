@@ -3,9 +3,6 @@ package discovery
 import (
 	"encoding/json"
 	"os/exec"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
 // WiFi reads the current Wi-Fi link from system_profiler, which needs no
@@ -41,41 +38,4 @@ func WiFi() *Link {
 		}
 	}
 	return nil
-}
-
-var channelRe = regexp.MustCompile(`^(\d+) \((\d+)GHz(?:, (\d+)MHz)?\)`)
-
-// parseLink turns system_profiler's fields, like "108 (5GHz, 160MHz)",
-// "802.11ax" and "spairport_security_mode_wpa2_personal", into a Link.
-func parseLink(channel, phy, security, signal string, rate int) *Link {
-	l := &Link{Rate: rate}
-	if m := channelRe.FindStringSubmatch(channel); m != nil {
-		l.Channel, l.Band = m[1], m[2]+" GHz"
-		if m[3] != "" {
-			l.Width = m[3] + " MHz"
-		}
-	}
-	l.Standard = map[string]string{
-		"802.11be": "Wi-Fi 7", "802.11ax": "Wi-Fi 6", "802.11ac": "Wi-Fi 5", "802.11n": "Wi-Fi 4",
-	}[phy]
-	if l.Standard == "Wi-Fi 6" && l.Band == "6 GHz" {
-		l.Standard = "Wi-Fi 6E"
-	}
-	sec := strings.TrimPrefix(security, "spairport_security_mode_")
-	switch {
-	case strings.Contains(sec, "wpa3"):
-		l.Security = "WPA3"
-	case strings.Contains(sec, "wpa2"):
-		l.Security = "WPA2"
-	case strings.Contains(sec, "wpa"):
-		l.Security = "WPA"
-	case strings.Contains(sec, "wep"):
-		l.Security = "WEP"
-	case sec == "none":
-		l.Security = "open"
-	}
-	if dbm, _, ok := strings.Cut(signal, " dBm"); ok {
-		l.Signal, _ = strconv.Atoi(strings.TrimSpace(dbm))
-	}
-	return l
 }
