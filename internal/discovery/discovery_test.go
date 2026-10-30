@@ -36,3 +36,30 @@ func TestKindTVBrands(t *testing.T) {
 		}
 	}
 }
+
+func TestKindEverydayDevices(t *testing.T) {
+	for _, c := range []struct {
+		d    Device
+		want string
+	}{
+		{Device{Host: "iphone-de-lucas.home"}, "iPhone"},
+		{Device{HW: "Mac16,1", Services: map[string]bool{"mdns:airplay": true}}, "Mac"},
+		{Device{Services: map[string]bool{"mdns:ipp": true}}, "Printer"},
+		{Device{Services: map[string]bool{"mdns:spotify-connect": true}}, "Speaker"},
+		{Device{Services: map[string]bool{"mdns:airplay": true}}, "AirPlay device"},
+	} {
+		if got := c.d.Kind(); got != c.want {
+			t.Errorf("Kind(%+v) = %q, want %q", c.d, got, c.want)
+		}
+	}
+}
+
+func TestParseLink(t *testing.T) {
+	l := parseLink("108 (5GHz, 160MHz)", "802.11ax", "spairport_security_mode_wpa2_personal", "-40 dBm / -93 dBm", 2401)
+	if l.Band != "5 GHz" || l.Width != "160 MHz" || l.Channel != "108" || l.Standard != "Wi-Fi 6" || l.Security != "WPA2" || l.Signal != -40 {
+		t.Fatalf("parseLink = %+v", l)
+	}
+	if l.SignalWords() != "excellent signal" || l.SecurityWords() != "WPA2 (secure)" {
+		t.Fatalf("words: %q %q", l.SignalWords(), l.SecurityWords())
+	}
+}
