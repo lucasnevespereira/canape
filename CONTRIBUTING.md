@@ -38,3 +38,5 @@ That checks you're on a clean, up to date `main`, runs the tests, tags `v0.2.0` 
 Pre-releases work too: `make release v=0.2.0-beta.1` publishes binaries and leaves Homebrew alone.
 
 The Homebrew step needs a `HOMEBREW_TAP_TOKEN` secret on this repo: a GitHub token that can push to `lucasnevespereira/homebrew-tools`.
+
+If that step fails (it did on v0.1.0, with `unexpected HTTP 303 response`), update the formula by hand: set `url` and `sha256` in `canape.rb` in the tap. The checksum is `curl -sL <url> | shasum -a 256`.
