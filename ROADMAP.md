@@ -13,7 +13,7 @@ Where canape is going, in order. Every item passes the filter in [AGENTS.md](AGE
 - [x] Quieter dashboard: graphite theme, only 8 apps until "Show all", network folded to one line, Wi-Fi password hidden until "Show"
 - [x] Homebrew formula updated automatically on release (v0.2.0)
 - [x] Computer remote on macOS: play, pause, skip, volume, full screen on the machine canape runs on (CLI, dashboard, MCP)
-- [x] Dashboard organized by device: Home cards, one page per device, last page reopens
+- [x] Dashboard organized by device: a page per device, phone tabs built from the devices with More for the rest, sidebar on a computer
 - [x] Claude through MCP (`canape mcp`)
 - [x] Homes: one setup per network, picked automatically
 - [x] `canape setup`, the status screen, help grouped by task

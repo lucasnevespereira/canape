@@ -45,7 +45,22 @@
   .brand svg { width: 22px; height: 22px; color: var(--accent); }
   .home-name { padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
 
-  main { max-width: 1040px; margin: 0 auto; padding: 8px 20px calc(32px + env(safe-area-inset-bottom)); }
+  main { max-width: 1040px; margin: 0 auto; padding: 8px 20px calc(96px + env(safe-area-inset-bottom)); }
+  .more-title { font-size: 15px; font-weight: 600; margin: 4px 0 12px; }
+
+  /* Tabs on a phone: one per device, then More for everything else */
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex;
+    padding: 6px 8px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  nav button {
+    flex: 1; min-width: 0; border: 0; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 2px;
+    font-size: 11px; font-weight: 500; color: var(--muted);
+  }
+  nav button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  nav svg { width: 22px; height: 22px; }
+  nav button[aria-current="page"] { color: var(--accent); }
 
   /* Pages: one at a time on a phone. Home is the list of devices. */
   .page { display: none; }
@@ -80,8 +95,9 @@
   .bar { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-bottom: 8px; }
   .back { display: flex; align-items: center; gap: 2px; border: 0; background: none; padding: 6px 8px 6px 0; color: var(--accent); font-weight: 500; }
   .back svg { width: 18px; height: 18px; }
-  .bar h2 { margin: 0 0 0 auto; font-size: 15px; font-weight: 600; }
-  .bar .state { color: var(--muted); font-size: 13px; }
+  .bar h2 { margin: 0; font-size: 17px; font-weight: 600; }
+  .bar .back + h2 { margin-left: auto; font-size: 15px; }
+  .bar .state { margin-left: auto; color: var(--muted); font-size: 13px; }
   h3 { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); margin: 26px 0 10px; }
   .link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 13px; font-weight: 500; }
 
@@ -212,15 +228,16 @@
 
   /* A computer: devices on the left, the open one on the right */
   @media (min-width: 900px) {
-    main { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+    /* The page stops at a readable width instead of stretching */
+    main { display: grid; grid-template-columns: 300px minmax(0, 700px); justify-content: center; gap: 24px; align-items: start; max-width: 1080px; padding-bottom: 40px; }
+    nav, .more-title { display: none; }
+    .console { max-width: 520px; margin: 0 auto; }
     #page-home { display: block; position: sticky; top: 16px; }
     .cards { grid-template-columns: 1fr; gap: 8px; }
     .card { grid-template-columns: auto minmax(0, 1fr); align-items: center; min-height: 0; padding: 12px 14px; gap: 2px 12px; }
     .card .icon { grid-row: span 2; }
     .page:not(#page-home) { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 26px 26px; }
     .back { display: none; }
-    .bar h2 { margin-left: 0; font-size: 17px; }
-    .bar .state { margin-left: auto; }
     .icon-btn, .rocker, .dial, .type input, .btn:not(.primary), .tile-btn, .hrocker, .segmented { background: var(--bg); }
     .segmented button[aria-current="true"] { background: var(--surface-2); }
     .apps .tile { background: var(--bg); }
@@ -242,6 +259,7 @@
   <symbol id="i-tv" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3 5h18v12H3zM8 21h8M12 17v4"/></symbol>
   <symbol id="i-computer" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4 5h16v11H4zM2 19h20"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
   <symbol id="i-network" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4"/></symbol>
   <symbol id="i-power" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
@@ -273,6 +291,7 @@
 <main id="app">
   <!-- Home: the things canape controls -->
   <section class="page" id="page-home">
+    <h2 class="more-title">All devices</h2>
     <div class="cards">
       <button class="card" data-go="tv" id="card-tv">
         <span class="icon"><svg><use href="#i-tv"/></svg></span>
@@ -298,7 +317,6 @@
   <!-- TV -->
   <section class="page" id="page-tv">
     <div class="bar">
-      <button class="back" data-go="home"><svg><use href="#i-prev"/></svg>Home</button>
       <h2>TV</h2><span class="state" id="tv-state"></span>
     </div>
 
@@ -359,7 +377,6 @@
   <!-- The computer canape runs on -->
   <section class="page" id="page-computer">
     <div class="bar">
-      <button class="back" data-go="home"><svg><use href="#i-prev"/></svg>Home</button>
       <h2 id="pc-name">Computer</h2>
     </div>
     <div class="transport">
@@ -386,7 +403,6 @@
   <!-- Wi-Fi -->
   <section class="page" id="page-wifi">
     <div class="bar">
-      <button class="back" data-go="home"><svg><use href="#i-prev"/></svg>Home</button>
       <h2>Share Wi-Fi</h2>
     </div>
     <div id="no-wifi" class="empty" hidden>
@@ -407,7 +423,7 @@
   <!-- Network -->
   <section class="page" id="page-network">
     <div class="bar">
-      <button class="back" data-go="home"><svg><use href="#i-prev"/></svg>Home</button>
+      <button class="back" data-go="home"><svg><use href="#i-prev"/></svg>More</button>
       <h2>Who's online</h2>
     </div>
     <div class="net-head"><span id="net-count"></span><button class="link" id="net-refresh">Refresh</button></div>
@@ -415,6 +431,7 @@
     <ul class="devices" id="devices"></ul>
   </section>
 </main>
+<nav id="tabs" aria-label="Devices"></nav>
 <div id="toast" role="status"></div>
 
 <script>
@@ -448,12 +465,14 @@ function fail(e) { if (!(e instanceof LoggedOut)) toast(e.message); }
 function showLoggedOut() {
   $("#login").hidden = false;
   $("#app").hidden = true;
+  $("#tabs").hidden = true;
 }
 
 // Pages. A phone shows one at a time and Home is the list of devices. A
 // computer keeps Home as a sidebar and shows the open device beside it.
 function go(page) {
   if (!PAGES.includes(page)) page = "home";
+  // On a computer Home is the sidebar, so it opens the last device instead.
   if (page === "home" && wide.matches) page = state.last || "tv";
   state.page = page;
   for (const p of document.querySelectorAll(".page")) p.classList.toggle("current", p.id === "page-" + page);
@@ -466,7 +485,41 @@ function go(page) {
     try { localStorage.setItem("page", page); } catch (e) {}
   }
   if (page === "network") loadDevices();
-  if (page !== "home") window.scrollTo(0, 0);
+  markTabs();
+  window.scrollTo(0, 0);
+}
+
+// A phone gets one tab per device, then More for the full list. With more
+// devices than fit, the first ones get tabs and the rest stay in More.
+const MAX_DEVICE_TABS = 4;
+function renderTabs() {
+  const tabs = [{ page: "tv", label: "TV", icon: "i-tv" }];
+  if (state.pc && state.pc.supported) tabs.push({ page: "computer", label: shortName(state.pc.name), icon: "i-computer" });
+  tabs.push({ page: "wifi", label: "Wi-Fi", icon: "i-wifi" });
+  const shown = tabs.slice(0, MAX_DEVICE_TABS);
+  shown.push({ page: "home", label: "More", icon: "i-more" });
+  $("#tabs").replaceChildren(...shown.map((t) => {
+    const b = document.createElement("button");
+    b.dataset.page = t.page;
+    b.innerHTML = `<svg><use href="#${t.icon}"/></svg>`;
+    const label = document.createElement("span");
+    label.textContent = t.label;
+    b.append(label);
+    b.onclick = () => go(t.page);
+    return b;
+  }));
+  markTabs();
+}
+function markTabs() {
+  for (const b of document.querySelectorAll("#tabs button")) {
+    const current = b.dataset.page === state.page || (state.page === "network" && b.dataset.page === "home");
+    b.setAttribute("aria-current", current ? "page" : "false");
+  }
+}
+function shortName(name) {
+  if (/macbook/i.test(name)) return "MacBook";
+  if (/\bmac\b|imac|mac mini/i.test(name)) return "Mac";
+  return "Computer";
 }
 for (const el of document.querySelectorAll("[data-go]")) el.onclick = () => go(el.dataset.go);
 wide.addEventListener("change", () => go(state.page));
@@ -677,6 +730,7 @@ $("#wifi-tv").onclick = async () => {
 function renderComputer(c) {
   state.pc = c;
   $("#card-computer").hidden = !c.supported;
+  renderTabs();
   if (!c.supported) {
     if (state.page === "computer") go("home");
     return;
@@ -751,7 +805,8 @@ document.addEventListener("keydown", (e) => {
 // Open where the user left off: the remote is one tap away at most.
 try { state.last = localStorage.getItem("page"); } catch (e) {}
 const hash = location.hash.slice(1);
-go(PAGES.includes(hash) ? hash : state.last || "home");
+renderTabs();
+go(PAGES.includes(hash) ? hash : state.last || "tv");
 
 loadHome().then(refreshTV);
 loadComputer();
