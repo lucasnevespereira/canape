@@ -6,207 +6,218 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="canape">
-<meta name="theme-color" content="#142a24" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#e6ebe4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f6f7" media="(prefers-color-scheme: light)">
 <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
 <link rel="apple-touch-icon" href="/icons/180.png">
 <title>canape</title>
 <style>
-  /* Green velvet and brass: a sofa, and the knobs of an old TV set. */
+  /* Graphite: neutral grays, one blue accent, out of the way of the TV. */
   :root {
-    --bg: #e6ebe4; --surface: #f7f9f5; --raised: #ffffff; --line: #cfd8cd;
-    --text: #1d332d; --muted: #5f7069; --accent: #9a7428; --accent-ink: #ffffff;
-    --accent-soft: #eadfc4; --danger: #a8432f; --on: #3f8f5f;
-    --font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bg: #f6f6f7; --surface: #ffffff; --surface-2: #efeff1; --line: #e3e3e6;
+    --text: #16171a; --muted: #6b6e75; --accent: #2f6bff; --accent-ink: #ffffff;
+    --accent-soft: rgba(47, 107, 255, 0.12); --on: #1f9d55;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius: 16px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #142a24; --surface: #1c3830; --raised: #234339; --line: #2d4d43;
-      --text: #efe9dc; --muted: #93a89e; --accent: #d6b46a; --accent-ink: #1a1408;
-      --accent-soft: #3b4632; --danger: #e08a6f; --on: #7fd39b;
+      --bg: #111214; --surface: #1a1b1e; --surface-2: #232428; --line: #2c2d32;
+      --text: #ececee; --muted: #8b8d93; --accent: #7aa2ff; --accent-ink: #0b1020;
+      --accent-soft: rgba(122, 162, 255, 0.16); --on: #4ade80;
     }
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
   body {
-    margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 var(--font);
-    -webkit-tap-highlight-color: transparent;
+    margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 var(--font);
+    -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
   }
   button { font: inherit; color: inherit; cursor: pointer; }
-  button:disabled { opacity: 0.45; cursor: default; }
-  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   [hidden] { display: none !important; }
+  .press { touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
   /* Header */
   header {
-    display: flex; align-items: center; gap: 12px;
-    padding: max(14px, env(safe-area-inset-top)) 20px 10px; max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px; max-width: 1040px; margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) 20px 12px;
   }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 20px; letter-spacing: -0.01em; }
-  .brand svg { width: 26px; height: 26px; color: var(--accent); }
-  .home-name { color: var(--muted); font-size: 15px; }
-  .status { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--muted); }
-  .status i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-  .status.on i { background: var(--on); box-shadow: 0 0 0 4px color-mix(in srgb, var(--on) 20%, transparent); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 17px; letter-spacing: -0.01em; }
+  .brand svg { width: 22px; height: 22px; color: var(--accent); }
+  .home-name { padding: 2px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: 13px; }
+  .status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .status.on i { background: var(--on); }
 
-  /* Panels: tabs on a phone, side by side on a wide screen */
-  main { max-width: 1200px; margin: 0 auto; padding: 4px 20px calc(96px + env(safe-area-inset-bottom)); }
+  main { max-width: 1040px; margin: 0 auto; padding: 0 20px calc(92px + env(safe-area-inset-bottom)); }
   .panel { display: none; }
   .panel.active { display: block; }
-  .panel > h2 { display: none; }
-  h3 { font-size: 15px; font-weight: 700; color: var(--muted); margin: 28px 0 10px; }
+  .card-title { display: none; }
+  h3 { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--muted); margin: 26px 0 10px; }
+  .link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 13px; font-weight: 500; }
 
   /* Remote */
-  .topline { display: flex; align-items: center; gap: 14px; margin: 6px 0 18px; }
-  .showing { margin-left: auto; min-width: 0; color: var(--muted); font-size: 15px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .showing b { color: var(--text); font-weight: 700; }
-  .round {
-    width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
-    display: grid; place-items: center; transition: transform 80ms ease, background 120ms ease;
-    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  .topline { display: flex; align-items: center; gap: 12px; margin: 8px 0 22px; }
+  .showing { margin-left: auto; min-width: 0; color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showing b { color: var(--text); font-weight: 600; }
+  .icon-btn {
+    width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+    display: grid; place-items: center; transition: background 120ms ease, transform 80ms ease;
   }
-  .round svg { width: 22px; height: 22px; }
-  .round:active, .pressed { transform: scale(0.94); background: var(--accent-soft); }
-  #power-off { color: var(--danger); }
-  .round[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .icon-btn:hover { background: var(--surface-2); }
+  .icon-btn:active, .icon-btn.pressed { transform: scale(0.95); background: var(--surface-2); }
+  .icon-btn[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
 
-  .console { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
-  .side { display: grid; gap: 12px; justify-items: center; }
-
+  .console { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+  .side { display: grid; gap: 10px; justify-items: center; }
   .rocker {
-    width: 60px; border-radius: 30px; border: 1px solid var(--line); background: var(--surface);
-    display: grid; grid-template-rows: 60px auto 60px; justify-items: center; align-items: center; overflow: hidden;
+    width: 46px; border-radius: 23px; border: 1px solid var(--line); background: var(--surface);
+    display: grid; grid-template-rows: 48px auto 48px; justify-items: center; align-items: center; overflow: hidden;
   }
-  .rocker button {
-    width: 100%; height: 100%; border: 0; background: transparent; font-size: 26px; font-weight: 600;
-    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-  }
-  .rocker button:active, .rocker button.pressed { background: var(--accent-soft); }
-  .rocker output { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; padding: 2px 0; }
+  .rocker button { width: 100%; height: 100%; border: 0; background: transparent; font-size: 20px; color: var(--muted); }
+  .rocker button:hover { color: var(--text); }
+  .rocker button:active, .rocker button.pressed { background: var(--surface-2); color: var(--text); }
+  .rocker output { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* The dial: the one bold thing on the page */
   .dial {
-    position: relative; width: min(100%, 248px); aspect-ratio: 1; margin: 0 auto; border-radius: 50%;
-    background: radial-gradient(circle at 50% 38%, var(--raised), var(--surface) 70%);
-    border: 2px solid var(--line); box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent);
+    position: relative; width: min(100%, 232px); aspect-ratio: 1; margin: 0 auto; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--line);
   }
-  .dial button {
-    position: absolute; border: 0; background: transparent; display: grid; place-items: center; color: var(--muted);
-    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-  }
-  .dial button svg { width: 26px; height: 26px; }
+  .dial button { position: absolute; border: 0; background: transparent; display: grid; place-items: center; color: var(--muted); }
+  .dial button svg { width: 22px; height: 22px; }
+  .dial button:hover { color: var(--text); }
   .dial .up    { top: 0; left: 28%; width: 44%; height: 30%; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
   .dial .down  { bottom: 0; left: 28%; width: 44%; height: 30%; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
   .dial .left  { left: 0; top: 28%; width: 30%; height: 44%; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
   .dial .right { right: 0; top: 28%; width: 30%; height: 44%; border-radius: 0 100% 100% 0 / 0 50% 50% 0; }
-  .dial .up:active, .dial .down:active, .dial .left:active, .dial .right:active, .dial .pressed:not(.ok) { color: var(--accent); background: var(--accent-soft); }
+  .dial .up:active, .dial .down:active, .dial .left:active, .dial .right:active,
+  .dial .up.pressed, .dial .down.pressed, .dial .left.pressed, .dial .right.pressed { background: var(--surface-2); color: var(--accent); }
   .dial .ok {
-    inset: 30%; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
-    font-weight: 800; font-size: 20px; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
-    transition: transform 80ms ease;
+    inset: 31%; border-radius: 50%; background: var(--surface-2); color: var(--text); font-weight: 600; font-size: 15px;
+    box-shadow: inset 0 0 0 2px var(--accent); transition: transform 80ms ease;
   }
-  .dial .ok:active, .dial .ok.pressed { transform: scale(0.94); }
+  .dial .ok:active, .dial .ok.pressed { transform: scale(0.95); background: var(--accent-soft); }
 
-  .hint { display: none; margin: 14px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
-  @media (hover: hover) and (pointer: fine) { .hint { display: block; } }
-
-  .type { display: flex; gap: 10px; margin-top: 18px; }
+  .type { display: flex; gap: 8px; margin-top: 18px; }
   .type input {
-    flex: 1; min-width: 0; min-height: 50px; padding: 0 16px; font: inherit; color: var(--text);
-    background: var(--surface); border: 1px solid var(--line); border-radius: 25px;
+    flex: 1; min-width: 0; height: 44px; padding: 0 14px; font: inherit; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
   }
-  .pill {
-    min-height: 50px; padding: 0 20px; border-radius: 25px; border: 1px solid var(--line); background: var(--surface);
-    font-weight: 600;
+  .btn {
+    height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface);
+    font-weight: 500; transition: background 120ms ease;
   }
-  .pill.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.06); }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chips button { min-height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid var(--line); background: var(--surface); }
-  .chips button[aria-current="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  /* Inputs as a segmented switch */
+  .segmented { display: flex; padding: 3px; gap: 3px; background: var(--surface-2); border-radius: 12px; overflow-x: auto; }
+  .segmented button {
+    flex: 1 0 auto; height: 38px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 500;
+  }
+  .segmented button[aria-current="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
 
-  .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 14px 10px; }
+  .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 14px 8px; }
   .apps button { border: 0; background: none; padding: 0; display: grid; justify-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
   .apps .tile {
-    width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center;
-    font-weight: 800; font-size: 20px; color: #fff; letter-spacing: -0.02em;
+    width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2);
+    color: var(--text); font-weight: 600; font-size: 17px; transition: background 120ms ease;
   }
-  .apps span:last-child { max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .apps button[aria-current="true"] .tile { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .apps button[aria-current="true"] { color: var(--text); font-weight: 700; }
+  .apps button:hover .tile { background: var(--line); }
+  .apps span:last-child { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .apps button[aria-current="true"] .tile { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+  .apps button[aria-current="true"] { color: var(--text); }
 
-  .empty { padding: 36px 8px; text-align: center; color: var(--muted); }
-  .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
-  .empty code { font-family: inherit; font-weight: 700; color: var(--text); }
-  .big {
-    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; margin-top: 18px;
-    border-radius: 32px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 18px;
-  }
-  .big svg { width: 22px; height: 22px; }
+  .empty { padding: 32px 8px; text-align: center; color: var(--muted); }
+  .empty strong { display: block; color: var(--text); font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .empty code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); color: var(--text); }
+  .wide-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 52px; margin-top: 8px; }
+  .wide-btn svg { width: 18px; height: 18px; }
 
   /* Wi-Fi */
-  .qr { background: #fff; border-radius: 22px; padding: 12px; width: min(78vw, 300px); margin: 12px auto 18px; }
+  .qr { background: #fff; border-radius: 14px; padding: 10px; width: min(72vw, 260px); margin: 10px auto 16px; border: 1px solid var(--line); }
   .qr img { display: block; width: 100%; aspect-ratio: 1; }
-  .wifi-text { text-align: center; }
-  .wifi-text p { margin: 4px 0; color: var(--muted); }
-  .wifi-text b { color: var(--text); font-size: 18px; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
+  .kv { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; margin: 0 auto; max-width: 320px; }
+  .kv dt { color: var(--muted); font-size: 13px; }
+  .kv dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .kv .link { justify-self: end; }
+  .wifi-hint { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 14px; }
   .wifi-actions { display: flex; justify-content: center; margin-top: 18px; }
 
-  /* Network */
-  .devices { list-style: none; margin: 8px 0 0; padding: 0; }
-  .devices li { padding: 11px 2px; border-bottom: 1px solid var(--line); }
-  .devices .name { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .devices .meta { display: block; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .net-head { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; color: var(--muted); }
+  /* Network: folded to one line until opened */
+  details summary {
+    display: flex; align-items: center; gap: 10px; list-style: none; cursor: pointer; padding: 6px 0; font-weight: 500;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary svg { width: 16px; height: 16px; color: var(--muted); transition: transform 150ms ease; }
+  details[open] summary svg { transform: rotate(90deg); }
+  details summary .link { margin-left: auto; }
+  .devices { list-style: none; margin: 6px 0 0; padding: 0; }
+  .devices li { padding: 9px 0; border-top: 1px solid var(--line); }
+  .devices .name { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .devices .meta { display: block; color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .net-error { color: var(--muted); font-size: 13px; padding: 8px 0; }
 
-  /* Tabs */
+  /* Tabs on a phone */
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr);
-    padding: 8px 12px max(10px, env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line);
+    padding: 6px 12px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   }
-  nav button { border: 0; background: none; display: grid; justify-items: center; gap: 3px; padding: 6px 0; font-size: 12px; color: var(--muted); }
-  nav svg { width: 24px; height: 24px; }
-  nav button[aria-current="page"] { color: var(--accent); font-weight: 700; }
+  nav button { border: 0; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; font-size: 11px; font-weight: 500; color: var(--muted); }
+  nav svg { width: 22px; height: 22px; }
+  nav button[aria-current="page"] { color: var(--accent); }
 
-  /* Wide screens: everything at once, no tabs */
-  @media (min-width: 960px) {
-    /* minmax(0, …) lets a column shrink below its longest word, like a long device name */
-    main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr); gap: 28px; padding-bottom: 40px; align-items: start; }
-    .panel { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: 6px 24px 24px; }
-    .panel > h2 { display: block; font-size: 17px; margin: 18px 0 6px; }
-    .round, .chips button, .rocker, .type input, .pill { background: var(--bg); }
-    .qr { width: 240px; }
+  /* A computer: remote on the left, Wi-Fi and network stacked on the right */
+  @media (min-width: 900px) {
+    main {
+      display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-rows: auto 1fr;
+      gap: 20px; padding-bottom: 40px; align-items: start;
+    }
+    #panel-remote { grid-row: span 2; }
+    .panel {
+      display: block; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 24px 22px;
+    }
+    .card-title { display: block; font-size: 14px; font-weight: 600; margin: 18px 0 4px; }
+    .icon-btn, .rocker, .dial, .type input, .btn:not(.primary) { background: var(--bg); }
+    .segmented { background: var(--bg); }
+    .segmented button[aria-current="true"] { background: var(--surface-2); }
+    .apps .tile { background: var(--bg); }
+    .qr { width: 200px; }
     nav { display: none; }
   }
 
   #toast {
-    position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom)); transform: translate(-50%, 8px);
-    max-width: min(92vw, 440px); padding: 12px 18px; border-radius: 22px; background: var(--text); color: var(--bg);
-    font-size: 14px; opacity: 0; transition: opacity 180ms, transform 180ms; pointer-events: none; text-align: center;
+    position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translate(-50%, 6px);
+    max-width: min(92vw, 420px); padding: 10px 16px; border-radius: 12px; background: var(--text); color: var(--bg);
+    font-size: 13.5px; opacity: 0; transition: opacity 160ms, transform 160ms; pointer-events: none; text-align: center;
   }
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
-  @media (min-width: 960px) { #toast { bottom: 28px; } }
+  @media (min-width: 900px) { #toast { bottom: 24px; } }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-sofa" viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h12a2 2 0 0 1 2 2v3a2.5 2.5 0 0 1 2 2.45V18h-2v2h-2v-2H6v2H4v-2H2v-4.55A2.5 2.5 0 0 1 4 11V8a2 2 0 0 1 2-2Zm0 2v3.3c.6.4 1 1.1 1 1.9V14h10v-.8c0-.8.4-1.5 1-1.9V8H6Z"/></symbol>
-  <symbol id="i-power" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
-  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
-  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
-  <symbol id="i-keyboard" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"/></symbol>
-  <symbol id="i-mute" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/></symbol>
-  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m6 15 6-6 6 6"/></symbol>
-  <symbol id="i-remote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><circle cx="12" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10 14h.01M14 14h.01M10 17h.01M14 17h.01"/></symbol>
-  <symbol id="i-wifi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></symbol>
-  <symbol id="i-network" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-remote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><circle cx="12" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M10 14h.01M14 14h.01M10 17h.01M14 17h.01"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-network" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4"/></symbol>
 </svg>
 
 <header>
   <div class="brand"><svg><use href="#i-sofa"/></svg>canape</div>
-  <span class="home-name" id="home-name"></span>
+  <span class="home-name" id="home-name" hidden></span>
   <span class="status" id="status"><i></i><span>Connecting</span></span>
 </header>
 
@@ -217,7 +228,7 @@
 
 <main id="app">
   <section class="panel" id="panel-remote">
-    <h2>Remote</h2>
+    <h2 class="card-title">Remote</h2>
 
     <div id="no-tv" class="empty" hidden>
       <strong>No TV on this network yet</strong>
@@ -226,76 +237,77 @@
 
     <div id="tv-off" hidden>
       <div class="empty"><strong>The TV is off</strong>Or it can't be reached right now.</div>
-      <button class="big" id="power-on"><svg><use href="#i-power"/></svg><span>Turn the TV on</span></button>
+      <button class="btn primary wide-btn" id="power-on"><svg><use href="#i-power"/></svg><span>Turn the TV on</span></button>
     </div>
 
     <div id="tv-on" hidden>
       <div class="topline">
-        <button class="round" id="power-off" aria-label="Turn the TV off"><svg><use href="#i-power"/></svg></button>
+        <button class="icon-btn" id="power-off" aria-label="Turn the TV off" title="Turn the TV off"><svg><use href="#i-power"/></svg></button>
         <div class="showing" id="showing"></div>
       </div>
 
       <div class="console">
         <div class="side">
           <div class="rocker" role="group" aria-label="Volume">
-            <button id="vol-up" aria-label="Volume up">+</button>
+            <button class="press" id="vol-up" aria-label="Volume up" title="Volume up (+)">+</button>
             <output id="vol" aria-live="polite">…</output>
-            <button id="vol-down" aria-label="Volume down">−</button>
+            <button class="press" id="vol-down" aria-label="Volume down" title="Volume down (−)">−</button>
           </div>
-          <button class="round" id="mute" aria-pressed="false" aria-label="Mute"><svg><use href="#i-mute"/></svg></button>
+          <button class="icon-btn" id="mute" aria-pressed="false" aria-label="Mute" title="Mute (M)"><svg><use href="#i-mute"/></svg></button>
         </div>
 
         <div class="dial" role="group" aria-label="Arrows">
-          <button class="up" data-key="UP" aria-label="Up"><svg><use href="#i-chev"/></svg></button>
-          <button class="right" data-key="RIGHT" aria-label="Right"><svg style="transform:rotate(90deg)"><use href="#i-chev"/></svg></button>
-          <button class="down" data-key="DOWN" aria-label="Down"><svg style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button>
-          <button class="left" data-key="LEFT" aria-label="Left"><svg style="transform:rotate(-90deg)"><use href="#i-chev"/></svg></button>
-          <button class="ok" data-key="ENTER">OK</button>
+          <button class="up press" data-key="UP" aria-label="Up" title="Up (↑)"><svg><use href="#i-chev"/></svg></button>
+          <button class="right press" data-key="RIGHT" aria-label="Right" title="Right (→)"><svg style="transform:rotate(90deg)"><use href="#i-chev"/></svg></button>
+          <button class="down press" data-key="DOWN" aria-label="Down" title="Down (↓)"><svg style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button>
+          <button class="left press" data-key="LEFT" aria-label="Left" title="Left (←)"><svg style="transform:rotate(-90deg)"><use href="#i-chev"/></svg></button>
+          <button class="ok press" data-key="ENTER" title="OK (Enter)">OK</button>
         </div>
 
         <div class="side">
-          <button class="round" data-key="HOME" aria-label="Home"><svg><use href="#i-home"/></svg></button>
-          <button class="round" data-key="BACK" aria-label="Back"><svg><use href="#i-back"/></svg></button>
-          <button class="round" id="keyboard" aria-label="Type on the TV" aria-expanded="false"><svg><use href="#i-keyboard"/></svg></button>
+          <button class="icon-btn press" data-key="HOME" aria-label="Home" title="Home (H)"><svg><use href="#i-home"/></svg></button>
+          <button class="icon-btn press" data-key="BACK" aria-label="Back" title="Back (Esc)"><svg><use href="#i-back"/></svg></button>
+          <button class="icon-btn" id="keyboard" aria-label="Type on the TV" title="Type on the TV" aria-expanded="false"><svg><use href="#i-keyboard"/></svg></button>
         </div>
       </div>
-      <p class="hint">On a keyboard: arrows to move, Enter for OK, Esc for Back, + and − for volume, M to mute.</p>
 
       <form class="type" id="type-form" hidden>
         <input id="type-text" placeholder="Type on the TV" aria-label="Text to type on the TV"
           autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
-        <button class="pill primary" type="submit">Send</button>
+        <button class="btn primary" type="submit">Send</button>
       </form>
 
       <h3>Inputs</h3>
-      <div class="chips" id="inputs"></div>
-      <h3>Apps</h3>
+      <div class="segmented" id="inputs"></div>
+      <h3><span>Apps</span><button class="link" id="apps-toggle" hidden></button></h3>
       <div class="apps" id="apps"></div>
     </div>
   </section>
 
   <section class="panel" id="panel-wifi">
-    <h2>Wi-Fi</h2>
+    <h2 class="card-title">Wi-Fi</h2>
     <div id="no-wifi" class="empty" hidden>
       <strong>No Wi-Fi saved for this network</strong>
       Run <code>canape wifi set</code> on your computer.
     </div>
     <div id="wifi" hidden>
       <div class="qr"><img id="wifi-qr" alt="QR code to join the Wi-Fi"></div>
-      <div class="wifi-text">
-        <p>Point a phone camera at the code, or type:</p>
-        <p>Network <b id="ssid"></b></p>
-        <p>Password <b id="password"></b></p>
-      </div>
-      <div class="wifi-actions"><button class="pill primary" id="wifi-tv">Show on the TV</button></div>
+      <p class="wifi-hint">Guests point their camera at the code to join.</p>
+      <dl class="kv">
+        <dt>Network</dt><dd id="ssid"></dd><span></span>
+        <dt>Password</dt><dd id="password">••••••••</dd><button class="link" id="pw-toggle">Show</button>
+      </dl>
+      <div class="wifi-actions"><button class="btn primary" id="wifi-tv">Show on the TV</button></div>
     </div>
   </section>
 
   <section class="panel" id="panel-network">
-    <h2>Network</h2>
-    <div class="net-head"><span id="net-count">Who's online</span><button class="pill" id="net-refresh">Refresh</button></div>
-    <div id="net-error" class="empty" hidden></div>
-    <ul class="devices" id="devices"></ul>
+    <h2 class="card-title">Network</h2>
+    <details id="net">
+      <summary><svg><use href="#i-next"/></svg><span id="net-count">Who's online</span><button class="link" id="net-refresh" type="button">Refresh</button></summary>
+      <div class="net-error" id="net-error" hidden></div>
+      <ul class="devices" id="devices"></ul>
+    </details>
   </section>
 </main>
 
@@ -308,8 +320,9 @@
 
 <script>
 const $ = (s) => document.querySelector(s);
-const wide = matchMedia("(min-width: 960px)");
-const state = { home: null, tv: null, tab: "remote" };
+const wide = matchMedia("(min-width: 900px)");
+const state = { home: null, tv: null, tab: "remote", allApps: false, showPassword: false };
+const APPS_SHOWN = 8;
 
 class LoggedOut extends Error {}
 
@@ -328,7 +341,7 @@ function toast(msg) {
   $("#toast").textContent = msg;
   $("#toast").classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 3200);
+  toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 3000);
 }
 function fail(e) { if (!(e instanceof LoggedOut)) toast(e.message); }
 
@@ -344,14 +357,17 @@ function setStatus(text, on) {
   $("#status span").textContent = text;
 }
 
-// Tabs on a phone. On a wide screen every panel shows and the tabs hide.
+// Tabs on a phone. On a computer every panel shows and the tabs hide.
 function setTab(tab) {
   state.tab = tab;
   for (const p of document.querySelectorAll(".panel")) p.classList.toggle("active", p.id === "panel-" + tab);
   for (const b of document.querySelectorAll("nav button")) b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false");
   history.replaceState(null, "", "#" + tab);
   try { localStorage.setItem("tab", tab); } catch (e) {}
-  if (tab === "network") loadDevices();
+  if (tab === "network" && !wide.matches) {
+    $("#net").open = true; // the list is the whole tab on a phone
+    loadDevices();
+  }
 }
 
 async function loadHome() {
@@ -360,21 +376,26 @@ async function loadHome() {
   } catch (e) { return fail(e); }
   const h = state.home;
   $("#home-name").textContent = h.name;
+  $("#home-name").hidden = false;
   $("#no-wifi").hidden = !!h.ssid;
   $("#wifi").hidden = !h.ssid;
   if (h.ssid) {
     $("#ssid").textContent = h.ssid;
-    $("#password").textContent = h.password;
+    renderPassword();
     $("#wifi-qr").src = "/wifi.svg?" + encodeURIComponent(h.ssid);
   }
 }
 
+// The QR is enough for most guests, so the password stays hidden until asked.
+function renderPassword() {
+  $("#password").textContent = state.showPassword ? state.home.password : "••••••••";
+  $("#pw-toggle").textContent = state.showPassword ? "Hide" : "Show";
+}
+$("#pw-toggle").onclick = () => { state.showPassword = !state.showPassword; renderPassword(); };
+
 async function refreshTV() {
   if (!state.home) return;
-  if (!state.home.tv) {
-    showRemote("none");
-    return;
-  }
+  if (!state.home.tv) return showRemote("none");
   try {
     state.tv = await api("/api/tv");
   } catch (e) { return fail(e); }
@@ -405,14 +426,22 @@ function renderRemote() {
     return b;
   }));
 
-  $("#apps").replaceChildren(...tv.apps.map((a) => {
+  // The app on screen always shows, even when the list is folded.
+  let apps = tv.apps;
+  if (!state.allApps && apps.length > APPS_SHOWN) {
+    apps = apps.slice(0, APPS_SHOWN);
+    const current = tv.apps.find((a) => a.id === tv.current);
+    if (current && !apps.includes(current)) apps[APPS_SHOWN - 1] = current;
+  }
+  $("#apps-toggle").hidden = tv.apps.length <= APPS_SHOWN;
+  $("#apps-toggle").textContent = state.allApps ? "Show fewer" : `Show all ${tv.apps.length}`;
+  $("#apps").replaceChildren(...apps.map((a) => {
     const b = document.createElement("button");
     b.setAttribute("aria-current", String(a.id === tv.current));
     b.setAttribute("aria-label", "Open " + a.title);
     const tile = document.createElement("span");
     tile.className = "tile";
     tile.textContent = initials(a.title);
-    tile.style.background = tileColors[hash(a.id) % tileColors.length];
     const name = document.createElement("span");
     name.textContent = a.title;
     b.append(tile, name);
@@ -428,18 +457,11 @@ function renderRemote() {
     $("#showing").append("Showing ", b);
   }
 }
+$("#apps-toggle").onclick = () => { state.allApps = !state.allApps; renderRemote(); };
 
 function initials(title) {
   const words = title.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/);
   return ((words[0] || "?")[0] + (words[1] ? words[1][0] : "")).toUpperCase();
-}
-// Muted upholstery colors that sit well on the green, picked by app ID so
-// an app keeps its color.
-const tileColors = ["#8a6d3b", "#5e7d5a", "#3f6f75", "#6d4f6f", "#4f5f7d", "#8a5a44", "#5b6b3a"];
-function hash(s) {
-  let h = 0;
-  for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return h;
 }
 
 async function act(path, body) {
@@ -511,6 +533,7 @@ $("#keyboard").onclick = () => {
   const form = $("#type-form");
   form.hidden = !form.hidden;
   $("#keyboard").setAttribute("aria-expanded", String(!form.hidden));
+  $("#keyboard").setAttribute("aria-pressed", String(!form.hidden));
   if (!form.hidden) $("#type-text").focus();
 };
 $("#type-form").onsubmit = async (e) => {
@@ -552,13 +575,14 @@ async function loadDevices() {
     $("#net-error").hidden = false;
   }
 }
-$("#net-refresh").onclick = loadDevices;
+$("#net-refresh").onclick = (e) => { e.preventDefault(); loadDevices(); };
+$("#net").addEventListener("toggle", () => { if ($("#net").open) loadDevices(); });
 
-// A keyboard works like the remote on a computer.
+// A keyboard works like the remote on a computer. Tooltips list the keys.
 const keyMap = { ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT", Enter: "ENTER", Escape: "BACK", Backspace: "BACK", h: "HOME" };
 document.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, textarea, button") && e.key === "Enter") return;
-  if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest("input, textarea, summary") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest("button") && (e.key === "Enter" || e.key === " ")) return;
   if (!state.tv || !state.tv.on) return;
   if (keyMap[e.key]) {
     e.preventDefault();
@@ -577,6 +601,7 @@ try { saved = localStorage.getItem("tab"); } catch (e) {}
 setTab(["remote", "wifi", "network"].includes(location.hash.slice(1)) ? location.hash.slice(1) : saved || "remote");
 
 loadHome().then(refreshTV);
+// The count shows in the folded line on a computer, so fetch it up front.
 if (wide.matches) loadDevices();
 
 document.addEventListener("visibilitychange", () => { if (!document.hidden) loadHome().then(refreshTV); });

@@ -27,13 +27,13 @@ func icon(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf.Bytes())
 }
 
-// sofa draws a flat sofa in the dashboard's accent color on its dark
+// sofa draws a flat sofa in the dashboard's blue accent on its graphite
 // background. Shapes are in fractions of the size, so it scales cleanly.
 func sofa(size int) image.Image {
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
-	draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{0x14, 0x2a, 0x24, 0xff}), image.Point{}, draw.Src)
-	accent := image.NewUniform(color.RGBA{0xd6, 0xb4, 0x6a, 0xff})
-	dark := image.NewUniform(color.RGBA{0xa8, 0x86, 0x3e, 0xff})
+	draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{0x11, 0x12, 0x14, 0xff}), image.Point{}, draw.Src)
+	accent := image.NewUniform(color.RGBA{0x7a, 0xa2, 0xff, 0xff})
+	dark := image.NewUniform(color.RGBA{0x4f, 0x7a, 0xe6, 0xff})
 	rect := func(x0, y0, x1, y1 float64, c image.Image) {
 		f := float64(size)
 		draw.Draw(img, image.Rect(int(x0*f), int(y0*f), int(x1*f), int(y1*f)), c, image.Point{}, draw.Src)

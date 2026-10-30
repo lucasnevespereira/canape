@@ -218,8 +218,8 @@ func (sv *server) manifest(w http.ResponseWriter, r *http.Request) {
 		"short_name":       "canape",
 		"start_url":        start,
 		"display":          "standalone",
-		"background_color": "#142a24",
-		"theme_color":      "#142a24",
+		"background_color": "#111214",
+		"theme_color":      "#111214",
 		"icons": []map[string]string{
 			{"src": "/icons/192.png", "sizes": "192x192", "type": "image/png"},
 			{"src": "/icons/512.png", "sizes": "512x512", "type": "image/png"},

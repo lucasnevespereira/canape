@@ -74,7 +74,7 @@ canape serve
 
 canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices.
 
-On a phone, three tabs sit at the bottom: **Remote** (power, volume, arrows and OK, Home, Back, typing, inputs, apps), **Wi-Fi** (the QR for your guests, and "Show on the TV") and **Network** (who's online). On a computer, all three show side by side, and the keyboard works like the remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute.
+On a phone, three tabs sit at the bottom: **Remote** (power, volume, arrows and OK, Home, Back, typing, inputs, apps), **Wi-Fi** (the QR for your guests, the password behind "Show", and "Show on the TV") and **Network** (who's online). On a computer, the remote sits on the left with Wi-Fi and Network on the right, and the keyboard works like the remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute. Hover a button to see its key.
 
 To use it like an app, add it to your home screen (Share → Add to Home Screen on iPhone). It opens full screen with its own icon.
 
