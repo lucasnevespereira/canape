@@ -25,7 +25,7 @@ func Router() (ip, mac string, err error) {
 		mac = MAC(ip)
 	}
 	if mac == "" {
-		return ip, "", errors.New("couldn't read the router's MAC address from the ARP table")
+		return ip, "", errors.New("the router doesn't give its hardware address, often because a VPN is on")
 	}
 	return ip, mac, nil
 }

@@ -23,7 +23,7 @@ Supported today: LG webOS TVs, Freebox routers. Protocol notes live in `docs/` (
 ## Decisions and why
 
 - **Runs inside the network, never on a VPS.** TVs only take commands from the LAN, and Wake-on-LAN is a LAN broadcast. Remote access is Tailscale's job.
-- **One home per network, keyed by the router's MAC.** `home.Load()` reads the default gateway's MAC from the ARP table (no permission needed, while recent macOS hides the Wi-Fi name from CLI tools) and returns that network's home. A new network gets an in-memory home, saved only once something is paired or `canape setup` runs, so read commands never add entries. Nothing ever overwrites another home. A pre-homes `state.json` migrates into a home named "home".
+- **One home per network, keyed by the router's MAC.** `home.Load()` reads the default gateway's MAC from the ARP table (no permission needed, while recent macOS hides the Wi-Fi name from CLI tools) and returns that network's home. A new network gets an in-memory home, saved only once something is paired or `canape setup` runs, so read commands never add entries. Nothing ever overwrites another home. A pre-homes `state.json` migrates into a home named "home". When the MAC can't be read (often a VPN), `home.Load` returns `ErrUnknownNetwork`: the report runs without a home, other commands say why they can't.
 - **TV brands behind one interface.** `tv.TV` is what canape does with any TV. A brand is a driver package under `internal/tv/` plus one entry in `internal/home/drivers.go`. Unsupported actions return `tv.ErrUnsupported`. Wake-on-LAN is shared (`tv.Wake`). Brand-only extras stay in the driver (`lg.TV.Call`, the LG Developer Mode app). Routers aren't abstracted: only the Freebox exists. How to add a brand: `docs/adding-a-tv.md`.
 - **Computer remote, not a computer agent.** canape presses keys only on the machine it runs on, usually the one streaming to the TV. Controlling another computer would need canape running there too: a background agent fails the Direction filter. Key events need the macOS Accessibility permission (macOS prompts once). Volume uses AppleScript and needs none. Play/pause sends the space bar to the app in front: the media key goes to whatever macOS thinks is playing, often Music, which made web video unreliable in testing. `click` clicks the screen center so a web player gets focus.
 - **Wake only what the user picked.** Routers remember every device ever seen and label most of them "workstation" (cameras, feeders, phones with private MACs), so canape never guesses which are computers. `canape wake add` saves one while it's online. CLI and MCP only: no dashboard page until someone needs it.
@@ -56,6 +56,7 @@ The CLI, the dashboard and the MCP tools all go through `home`. A new capability
 
 ## Rules
 
+- **Load the home where it's used:** once per command, dashboard request or MCP call. A copy kept around goes stale and its next save wipes what other commands wrote.
 - **Under `canape mcp`, stdout is the protocol.** Shared code must not print to stdout: return strings, or write to stderr.
 - `state.json` holds pairing keys and Wi-Fi passwords: mode 0600, never log its contents. Its path: `~/.canape/state.json`, or `$CANAPE_DATA/state.json`. A file in the old location (the OS config dir) moves there on first load.
 - No real IPs, MACs, SSIDs or keys in code, tests or docs.

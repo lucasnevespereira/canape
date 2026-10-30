@@ -1,12 +1,28 @@
-# canape
+<p align="center">
+  <img src="docs/images/logo.png" alt="" width="96">
+</p>
 
-**Join any Wi-Fi, understand it, and control what's on it.**
+<h1 align="center">canape</h1>
+
+<p align="center"><b>Join any Wi-Fi, understand it, and control what's on it.</b></p>
+
+<p align="center">
+  <a href="https://github.com/lucasnevespereira/canape/actions/workflows/ci.yml"><img src="https://github.com/lucasnevespereira/canape/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/lucasnevespereira/canape/releases"><img src="https://img.shields.io/github/v/release/lucasnevespereira/canape" alt="Latest release"></a>
+  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/lucasnevespereira/canape" alt="Go version"></a>
+  <img src="https://img.shields.io/badge/runs%20on-macOS%20%7C%20Linux%20%7C%20Raspberry%20Pi-555" alt="Runs on macOS, Linux and Raspberry Pi">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/lucasnevespereira/canape" alt="MIT license"></a>
+</p>
 
 canape is a helper for the network you're on. Join a Wi-Fi, at home or at your family's, type `canape`, and it tells you in plain words what you'd never find out alone: how good the Wi-Fi is, which box runs it, whether the internet works, and what every device on it is. Then it controls what's there: the TV, the computer you're on, sharing the Wi-Fi with a QR code. From the terminal, your phone or Claude.
 
 No hub to install, nothing to keep running, no network knowledge needed.
 
-> Early project. Works today with LG webOS TVs, macOS computers and Freebox routers. The network report for any Wi-Fi is next, see the [roadmap](ROADMAP.md).
+<p align="center">
+  <img src="docs/images/report.png" alt="canape describing a network: Wi-Fi quality, the box, the internet, and every device grouped by kind" width="760">
+</p>
+
+> Early project. The network report works on any Wi-Fi. Control works today with LG webOS TVs, macOS computers and Freebox routers. What's next is in the [roadmap](ROADMAP.md).
 
 ## Quick start
 
@@ -73,6 +89,12 @@ One TV setting matters: on LG, turn on **"Turn on via Wi-Fi"**, or canape can tu
 canape serve
 ```
 
+<p align="center">
+  <img src="docs/images/dashboard-tv.png" alt="The TV remote page on a phone: power, volume, arrows, inputs and apps" width="260">
+  &nbsp;&nbsp;
+  <img src="docs/images/dashboard-home.png" alt="The device list on a phone: the TV, the computer, Share Wi-Fi and who's online" width="260">
+</p>
+
 canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices.
 
 Each device has its own page: the TV remote (power, volume, arrows and OK, Home, Back, typing, inputs, apps), the computer's play and volume buttons, and the Wi-Fi QR for your guests. On a phone, tabs at the bottom switch between them in one tap, and **More** lists every device and who's online. On a computer, the devices stay on the left and the page shows on the right, and the keyboard works like the TV remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute.
@@ -132,7 +154,7 @@ Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_a
 At someone else's place, join their Wi-Fi and run `canape setup`. canape notices the new network, asks what to call it, and saves it next to yours. Back home, every command uses your home's setup again.
 
 ```bash
-canape homes                  # list them, → marks where you are
+canape homes                  # list them and what each has paired
 canape homes rename sister
 canape homes forget sister
 ```

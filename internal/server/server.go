@@ -33,7 +33,7 @@ type server struct {
 	// time and guards the state file, which ConnectTV may rewrite. Fine for a
 	// household. Split it if requests ever queue up.
 	mu      sync.Mutex
-	here    *home.Here
+	key     string // the login key
 	baseURL string // how the TV reaches this server
 }
 
@@ -52,7 +52,7 @@ func Run(addr string) error {
 		}
 	}
 	port := addr[strings.LastIndex(addr, ":")+1:]
-	sv := &server{here: h, baseURL: "http://" + discovery.LocalIP() + ":" + port}
+	sv := &server{key: h.State.Dashboard.Key, baseURL: "http://" + discovery.LocalIP() + ":" + port}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", sv.index)
@@ -257,7 +257,7 @@ func (sv *server) manifest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sv *server) validKey(k string) bool {
-	return subtle.ConstantTimeCompare([]byte(k), []byte(sv.here.State.Dashboard.Key)) == 1
+	return subtle.ConstantTimeCompare([]byte(k), []byte(sv.key)) == 1
 }
 
 func (sv *server) auth(next http.HandlerFunc) http.HandlerFunc {
@@ -274,7 +274,12 @@ func (sv *server) auth(next http.HandlerFunc) http.HandlerFunc {
 func (sv *server) tvStatus(w http.ResponseWriter, r *http.Request) {
 	sv.mu.Lock()
 	defer sv.mu.Unlock()
-	t, err := sv.here.ConnectTV()
+	h, err := home.Load()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	t, err := h.ConnectTV()
 	if err != nil {
 		// Off and unreachable look the same from here. The page offers power on.
 		writeJSON(w, home.TVStatus{})
@@ -302,9 +307,10 @@ func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {
 		tvHandler(sv, func(t tv.TV, _ struct{}) error { return t.TurnOff() })(w, r)
 		return
 	}
-	sv.mu.Lock()
-	err := sv.here.WakeTV()
-	sv.mu.Unlock()
+	h, err := home.Load()
+	if err == nil {
+		err = h.WakeTV()
+	}
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
 		return
@@ -323,7 +329,12 @@ func tvHandler[T any](sv *server, fn func(tv.TV, T) error) http.HandlerFunc {
 		}
 		sv.mu.Lock()
 		defer sv.mu.Unlock()
-		t, err := sv.here.ConnectTV()
+		h, err := home.Load()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		t, err := h.ConnectTV()
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err)
 			return

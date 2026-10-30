@@ -1,17 +1,20 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/router/freebox"
+	"github.com/lucasnevespereira/canape/internal/store"
 )
 
 // Device kinds, grouped the way a non-expert thinks about them.
-var groups = []struct{ name string }{{"TVs"}, {"Streaming"}, {"Speakers"}, {"Phones"}, {"Computers"}, {"Printers"}, {"Other"}}
+var groups = []string{"TVs", "Streaming", "Speakers", "Phones", "Computers", "Printers", "Other"}
 
 var kindGroup = map[string]string{
 	"LG webOS TV": "TVs", "Samsung TV": "TVs", "Sony TV": "TVs",
@@ -26,6 +29,11 @@ var kindGroup = map[string]string{
 // you can do on it. It works on any network, with or without router access.
 func report() error {
 	h, err := home.Load()
+	unknown := errors.Is(err, home.ErrUnknownNetwork)
+	if unknown {
+		// Nothing saved can apply, but everything else still works.
+		h, err = &home.Here{Home: &store.Home{}}, nil
+	}
 	if err != nil {
 		return err
 	}
@@ -49,9 +57,12 @@ func report() error {
 		return scanErr
 	}
 
-	if h.Saved {
+	switch {
+	case unknown:
+		fmt.Print("\ncanape · a network canape can't identify (is a VPN on?)\n\n")
+	case h.Saved:
 		fmt.Printf("\ncanape · %s\n\n", h.Name)
-	} else {
+	default:
 		fmt.Print("\ncanape · a network you haven't set up\n\n")
 	}
 	row("Wi-Fi", wifiLine(h, link))
@@ -60,7 +71,7 @@ func report() error {
 	row("Internet", inet.Words())
 
 	byGroup := map[string][]string{}
-	count, lgUnpaired := 0, false
+	count, lgUnpaired, tvSeen := 0, false, false
 	for _, d := range scan.Devices {
 		if d.IP == gatewayIP || d.Kind() == "Freebox" {
 			continue
@@ -75,7 +86,8 @@ func report() error {
 		case d.Self:
 			name = "this computer"
 		case d.Kind() == "LG webOS TV" && h.TV.Key != "" && d.IP == h.TV.IP:
-			name += " (" + tvState + ")"
+			name = home.BrandName(h.TV.Brand) + " TV (" + tvState + ")"
+			tvSeen = true
 		case d.Kind() == "LG webOS TV":
 			name += " (not paired yet)"
 			lgUnpaired = true
@@ -84,18 +96,26 @@ func report() error {
 		}
 		byGroup[group] = append(byGroup[group], name)
 	}
+	if h.TV.Key != "" && !tvSeen {
+		// A TV that's fully off doesn't answer the scan, but it's still there.
+		byGroup["TVs"] = append(byGroup["TVs"], home.BrandName(h.TV.Brand)+" TV ("+tvState+")")
+	}
 	fmt.Println()
 	row("Devices", fmt.Sprintf("%d online", count))
 	for _, g := range groups {
-		if names := byGroup[g.name]; len(names) > 0 {
-			fmt.Printf("  %-9s %-10s %s\n", "", g.name, summarize(names, 4))
+		if names := byGroup[g]; len(names) > 0 {
+			fmt.Printf("  %-9s %-10s %s\n", "", g, summarize(names, 4))
 		}
 	}
 
 	fmt.Println()
 	var next [][2]string
-	if lgUnpaired || !h.Saved {
-		next = append(next, [2]string{"canape setup", "pair the TV and save this Wi-Fi"})
+	switch {
+	case unknown:
+	case lgUnpaired:
+		next = append(next, [2]string{"canape setup", "pair the LG TV"})
+	case !h.Saved:
+		next = append(next, [2]string{"canape setup", "save this network and its Wi-Fi"})
 	}
 	if h.TV.Key != "" {
 		next = append(next, [2]string{"canape tv", "control the TV"})
@@ -105,7 +125,10 @@ func report() error {
 	} else if h.Saved {
 		next = append(next, [2]string{"canape wifi set", "save this Wi-Fi to share it as a QR code"})
 	}
-	next = append(next, [2]string{"canape serve", "the same, and a remote, on your phone"})
+	if h.TV.Key != "" || h.Wifi.SSID != "" {
+		next = append(next, [2]string{"canape serve", "do it from your phone"})
+	}
+	next = append(next, [2]string{"canape help", "everything canape can do"})
 	for i, n := range next {
 		label := ""
 		if i == 0 {
@@ -181,11 +204,17 @@ func pairedTVState(h *home.Here) string {
 }
 
 // deviceName is the friendliest name a device gives: its announced name, or
-// the first part of its network name ("iphone-de-lucas" from "iphone-de-lucas.home").
+// the first part of its network name ("iphone-de-alex" from "iphone-de-alex.home").
 func deviceName(d *discovery.Device) string {
 	host, _, _ := strings.Cut(d.Host, ".")
-	return firstNonEmpty(d.Name, d.Alias, host, d.IP)
+	alias := d.Alias
+	if uuidRe.MatchString(alias) {
+		alias = "" // iPhones announce a random ID instead of their name
+	}
+	return firstNonEmpty(d.Name, alias, host, d.IP)
 }
+
+var uuidRe = regexp.MustCompile(`^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$`)
 
 // summarize lists a few names and counts the rest, so a long group stays one line.
 func summarize(names []string, max int) string {

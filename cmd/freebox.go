@@ -16,7 +16,9 @@ func freeboxPairCommand() error {
 	if err != nil {
 		return err
 	}
-	if err := freeboxPair(h); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	if err := freeboxPair(ctx, h); err != nil {
 		return err
 	}
 	fmt.Println("Try: canape devices")
@@ -24,10 +26,8 @@ func freeboxPairCommand() error {
 }
 
 // freeboxPair asks the box for an app token. The owner confirms on its screen.
-func freeboxPair(h *home.Here) error {
+func freeboxPair(ctx context.Context, h *home.Here) error {
 	device, _ := os.Hostname()
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
 	token, err := freebox.Authorize(ctx, "canape", version.Get(), device, func() {
 		fmt.Println("   Look at the Freebox screen: use its arrows to pick \"Oui\" and confirm.")
 	})

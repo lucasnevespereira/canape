@@ -58,7 +58,7 @@ func wifiCommand(args []string) error {
 // askWifi asks for the network name, prefilled from the Freebox when there
 // is one, and the password. It reports whether both were given. Saving is
 // up to the caller.
-func askWifi(s *home.Here, in *bufio.Reader, indent string) bool {
+func askWifi(s *home.Here, in lineReader, indent string) bool {
 	ssid := s.Wifi.SSID
 	if ssid == "" && s.Freebox.AppToken != "" {
 		if fbx, err := freebox.New(s.Freebox.AppToken); err == nil {

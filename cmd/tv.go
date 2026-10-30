@@ -13,7 +13,6 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/qrcode"
-	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv"
 	"github.com/lucasnevespereira/canape/internal/tv/lg"
 	"github.com/lucasnevespereira/canape/internal/wifi"
@@ -236,22 +235,31 @@ func tvApp(t tv.TV, args []string) error {
 	return nil
 }
 
-func pair(s *home.Here) error {
-	fmt.Print("Looking for a TV... ")
-	t, err := s.PairTV(func(brand, ip string) {
-		fmt.Printf("found %s at %s\n", brand, ip)
+// pairTV finds a TV and pairs it, saying what happens along the way. When
+// none answers, it names the TVs canape found but can't control yet.
+func pairTV(h *home.Here, indent string) (tv.TV, error) {
+	fmt.Print(indent + "Looking for a TV... ")
+	t, err := h.PairTV(func(brand, ip string) {
+		fmt.Printf("found the %s TV at %s\n", brand, ip)
 	}, func() {
-		fmt.Println("Accept the prompt on your TV (you have 60 seconds)...")
+		fmt.Println(indent + "Accept canape on the TV screen (you have 60 seconds)...")
 	})
+	if errors.Is(err, home.ErrNoTV) {
+		fmt.Println("none answered.")
+		otherTVs(indent)
+	}
+	return t, err
+}
+
+func pair(s *home.Here) error {
+	t, err := pairTV(s, "")
 	if err != nil {
-		fmt.Println("none that canape supports.")
-		otherTVs("")
 		return err
 	}
 	defer t.Close()
-	fmt.Printf("Paired. Saved in home %q (%s)\n", s.Name, store.Path())
+	fmt.Printf("Paired. Saved in home %q.\n", s.Name)
 	if s.TV.MAC == "" {
-		fmt.Println(`Couldn't read the TV's MAC address, so "canape tv on" won't work. Add it to the file by hand.`)
+		fmt.Println(`Couldn't read the TV's network address, so "canape tv on" won't work yet. Run canape tv pair again later.`)
 	}
 	t.Notify("canape is paired")
 	fmt.Println(`Try: canape tv notify "hello from the couch"`)
