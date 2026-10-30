@@ -58,7 +58,7 @@ The CLI, the dashboard and the MCP tools all go through `home`. A new capability
 
 - **Load the home where it's used:** once per command, dashboard request or MCP call. A copy kept around goes stale and its next save wipes what other commands wrote.
 - **Under `canape mcp`, stdout is the protocol.** Shared code must not print to stdout: return strings, or write to stderr.
-- `state.json` holds pairing keys and Wi-Fi passwords: mode 0600, never log its contents. Its path: `~/.canape/state.json`, or `$CANAPE_DATA/state.json`. A file in the old location (the OS config dir) moves there on first load.
+- `state.json` holds pairing keys and Wi-Fi passwords: mode 0600, never log its contents. Its path: `~/.canape/state.json`, always. A file in the old location (the OS config dir) moves there on first load.
 - No real IPs, MACs, SSIDs or keys in code, tests or docs.
 - Ask the user to run `canape scan` instead of asking them for device details.
 - Commits: one-line Conventional Commits.

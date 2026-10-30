@@ -8,8 +8,12 @@ import (
 
 // A file from before homes existed must come back as Legacy, not be lost.
 func TestLoadKeepsPreHomesFile(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("CANAPE_DATA", dir)
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", "")
+	dir := filepath.Dir(Path())
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
 	old := `{"tv":{"ip":"192.168.1.20","mac":"aa:bb:cc:dd:ee:ff","key":"k"},"wifi":{"ssid":"Net","password":"p"},"freebox":{"app_token":"t"},"dashboard":{"key":"d"}}`
 	if err := os.WriteFile(filepath.Join(dir, "state.json"), []byte(old), 0o600); err != nil {
 		t.Fatal(err)
@@ -44,7 +48,6 @@ func TestLoadMovesOldLocation(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", "")
-	t.Setenv("CANAPE_DATA", "")
 	old := oldPath()
 	if err := os.MkdirAll(filepath.Dir(old), 0o700); err != nil {
 		t.Fatal(err)
