@@ -112,7 +112,7 @@ On any machine on the same network as the TV: a Mac, a Linux box, a Raspberry Pi
 
 ## Your data
 
-Everything stays in one file, `state.json`, in your user config folder (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), or wherever `CANAPE_DATA` points. It holds the pairing keys and the Wi-Fi passwords, so canape writes it readable by you only. Nothing is sent anywhere else.
+Everything stays in one file: `~/.canape/state.json`, on every system. It holds the pairing keys and the Wi-Fi passwords, so canape writes it readable by you only. Nothing is sent anywhere else. To start over, delete `~/.canape`. To keep it elsewhere (Docker, tests), set `CANAPE_DATA` to a folder.
 
 ## More
 

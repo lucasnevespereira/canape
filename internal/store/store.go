@@ -48,23 +48,34 @@ type State struct {
 	Legacy *Home `json:"-"`
 }
 
-// Path is $CANAPE_DATA/state.json, or the OS config dir, so the CLI works
-// from any directory.
+// Path is ~/.canape/state.json, the same on every system, or
+// $CANAPE_DATA/state.json when set (Docker, tests).
 func Path() string {
-	dir := os.Getenv("CANAPE_DATA")
-	if dir == "" {
-		cfg, err := os.UserConfigDir()
-		if err != nil {
-			cfg = "."
-		}
-		dir = filepath.Join(cfg, "canape")
+	if dir := os.Getenv("CANAPE_DATA"); dir != "" {
+		return filepath.Join(dir, "state.json")
 	}
-	return filepath.Join(dir, "state.json")
+	home, err := os.UserHomeDir()
+	if err != nil {
+		home = "."
+	}
+	return filepath.Join(home, ".canape", "state.json")
+}
+
+// oldPath is where state.json lived before ~/.canape: the OS config dir.
+func oldPath() string {
+	cfg, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(cfg, "canape", "state.json")
 }
 
 func Load() (*State, error) {
 	s := &State{Homes: map[string]*Home{}}
 	b, err := os.ReadFile(Path())
+	if errors.Is(err, fs.ErrNotExist) && os.Getenv("CANAPE_DATA") == "" {
+		b, err = moveOld()
+	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return s, nil
 	}
@@ -82,6 +93,28 @@ func Load() (*State, error) {
 		s.Legacy = &old
 	}
 	return s, nil
+}
+
+// moveOld moves a state.json from the old location into ~/.canape and
+// returns its contents. fs.ErrNotExist means there was none.
+func moveOld() ([]byte, error) {
+	old := oldPath()
+	if old == "" {
+		return nil, fs.ErrNotExist
+	}
+	b, err := os.ReadFile(old)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(Path()), 0o700); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(Path(), b, 0o600); err != nil {
+		return nil, err
+	}
+	os.Remove(old)
+	os.Remove(filepath.Dir(old)) // only succeeds if the folder is now empty
+	return b, nil
 }
 
 // Save writes owner-only: the file holds pairing keys and Wi-Fi passwords.
