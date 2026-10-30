@@ -132,7 +132,7 @@ Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_a
 At someone else's place, join their Wi-Fi and run `canape setup`. canape notices the new network, asks what to call it, and saves it next to yours. Back home, every command uses your home's setup again.
 
 ```bash
-canape homes                  # list them, → marks where you are
+canape homes                  # list them and what each has paired
 canape homes rename sister
 canape homes forget sister
 ```

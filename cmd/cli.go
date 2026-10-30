@@ -53,7 +53,7 @@ Wi-Fi
 Network
   canape scan                  look around: every device on this network (saves nothing)
   canape devices [all]         who's online, from the router's own list (Freebox)
-  canape homes                 saved homes, one per network · rename <name> · forget <name>
+  canape homes                 every network canape knows · rename <name> · forget <name>
 
 Run
   canape serve [addr]          web dashboard, made for your phone (default :8080)

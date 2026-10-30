@@ -1,10 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -43,16 +41,14 @@ func homesCommand(args []string) error {
 			if other.Name != name {
 				continue
 			}
-			answer := prompt(bufio.NewReader(os.Stdin), fmt.Sprintf("Forget %q and its pairings? Type yes", name), "")
-			if answer != "yes" {
-				fmt.Println("Kept.")
-				return nil
-			}
 			delete(h.State.Homes, key)
 			if err := h.State.Save(); err != nil {
 				return err
 			}
-			fmt.Printf("Forgot %q.\n", name)
+			fmt.Printf("Forgot %q and what was paired there.\n", name)
+			if key == h.Router {
+				fmt.Println("That was this network. Run canape setup to set it up again.")
+			}
 			return nil
 		}
 		return fmt.Errorf("no home called %q. Run canape homes to list them", name)
@@ -66,22 +62,20 @@ func listHomes(h *home.Here) error {
 		keys = append(keys, k)
 	}
 	sort.Slice(keys, func(i, j int) bool { return h.State.Homes[keys[i]].Name < h.State.Homes[keys[j]].Name })
-	if !h.Saved {
-		fmt.Printf("  → this network (router %s) isn't set up yet. Run: canape setup\n\n", h.Router)
-	}
 	if len(keys) == 0 {
-		fmt.Println("  No homes saved yet.")
+		fmt.Println("No homes saved yet. Run canape setup on a network to save it.")
 		return nil
 	}
 	for _, k := range keys {
 		hm := h.State.Homes[k]
-		marker := " "
+		here := ""
 		if k == h.Router {
-			marker = "→"
+			here = "  (you're here)"
 		}
+		fmt.Printf("%s%s\n", hm.Name, here)
 		var parts []string
 		if hm.TV.Key != "" {
-			parts = append(parts, fmt.Sprintf("%s TV at %s", strings.ToUpper(hm.TV.Brand), hm.TV.IP))
+			parts = append(parts, home.BrandName(hm.TV.Brand)+" TV")
 		}
 		if hm.Freebox.AppToken != "" {
 			parts = append(parts, "Freebox")
@@ -89,10 +83,17 @@ func listHomes(h *home.Here) error {
 		if hm.Wifi.SSID != "" {
 			parts = append(parts, "Wi-Fi "+hm.Wifi.SSID)
 		}
-		if len(parts) == 0 {
-			parts = append(parts, "nothing paired")
+		for _, c := range hm.Computers {
+			parts = append(parts, c.Name)
 		}
-		fmt.Printf("%s %-12s %s   %s\n", marker, hm.Name, k, strings.Join(parts, ", "))
+		if len(parts) == 0 {
+			parts = append(parts, "nothing paired yet")
+		}
+		fmt.Printf("  %s\n", strings.Join(parts, ", "))
 	}
+	if !h.Saved {
+		fmt.Println("\nThis network isn't saved yet. Run canape setup.")
+	}
+	fmt.Println("\nRename this one: canape homes rename <name>. Forget one: canape homes forget <name>.")
 	return nil
 }
