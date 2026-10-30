@@ -18,6 +18,15 @@ function run(argv) {
     $.AXIsProcessTrustedWithOptions($({ AXTrustedCheckOptionPrompt: true }));
     return "untrusted";
   }
+  if (argv[0] === "click") {
+    // The middle of the main screen, where a playing video usually is.
+    const f = $.NSScreen.mainScreen.frame;
+    const at = $.NSMakePoint(f.size.width / 2, f.size.height / 2);
+    for (const type of [1, 2]) { // left mouse down, then up
+      $.CGEventPost(0, $.CGEventCreateMouseEvent(null, type, at, 0));
+    }
+    return "ok";
+  }
   const code = parseInt(argv[1], 10);
   for (const down of [true, false]) {
     if (argv[0] === "media") {
@@ -35,6 +44,7 @@ function run(argv) {
 // macOS virtual key codes, and NX_KEYTYPE_PLAY for the media key.
 var keys = map[Key][2]string{
 	PlayPause:  {"media", "16"},
+	Click:      {"click", "0"},
 	Space:      {"key", "49"},
 	Back:       {"key", "123"},
 	Forward:    {"key", "124"},

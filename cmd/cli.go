@@ -32,8 +32,10 @@ TV
   canape tv notify <message>   show a message on the TV
 
 Computer (the one canape runs on, macOS for now)
-  canape pc play               play or pause whatever is playing
+  canape pc play               play or pause the player in front (the space bar)
+  canape pc click              click the video so the player listens to keys
   canape pc back | forward     skip back or ahead in the player
+  canape pc media              the media key, for Spotify or Music
   canape pc volume up|down     change the computer's volume
   canape pc mute               mute or unmute the computer
   canape pc fullscreen | esc   enter or leave full screen

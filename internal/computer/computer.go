@@ -12,8 +12,9 @@ import (
 type Key string
 
 const (
-	PlayPause  Key = "playpause"   // the media key: works for whatever is playing
-	Space      Key = "space"       // for players that ignore the media key
+	Space      Key = "space"       // plays and pauses the player in front, the most reliable for web video
+	PlayPause  Key = "playpause"   // the media key: goes to what macOS thinks is playing, often Music or Spotify
+	Click      Key = "click"       // clicks the middle of the screen so a web player gets focus
 	Back       Key = "back"        // left arrow: most players skip back 5 or 10 seconds
 	Forward    Key = "forward"     // right arrow
 	Fullscreen Key = "fullscreen"  // F
@@ -23,7 +24,7 @@ const (
 	Mute       Key = "mute"        // toggles
 )
 
-var Keys = []Key{PlayPause, Space, Back, Forward, Fullscreen, Escape, VolumeUp, VolumeDown, Mute}
+var Keys = []Key{Space, PlayPause, Click, Back, Forward, Fullscreen, Escape, VolumeUp, VolumeDown, Mute}
 
 var ErrUnsupported = errors.New("controlling this computer isn't supported on " + runtime.GOOS + " yet")
 

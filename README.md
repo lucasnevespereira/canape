@@ -75,7 +75,7 @@ canape serve
 
 canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices.
 
-On a phone, three tabs sit at the bottom: **Remote** (power, volume, arrows and OK, Home, Back, typing, inputs, apps), **Wi-Fi** (the QR for your guests, the password behind "Show", and "Show on the TV") and **Network** (who's online). On a computer, the remote sits on the left with Wi-Fi and Network on the right, and the keyboard works like the remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute. Hover a button to see its key.
+It opens on **Home**: one card per thing canape controls (your TV, the computer canape runs on, Share Wi-Fi) and who's online. Tap a card for its page: the TV remote (power, volume, arrows and OK, Home, Back, typing, inputs, apps), the computer's play and volume buttons, or the Wi-Fi QR for your guests. It reopens the last page you used. On a computer, the cards stay on the left and the page shows on the right, and the keyboard works like the TV remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute.
 
 To use it like an app, add it to your home screen (Share → Add to Home Screen on iPhone). It opens full screen with its own icon.
 
@@ -86,13 +86,14 @@ The dashboard only runs while `canape serve` does. Most things work without it: 
 When a movie plays on your Mac and shows on the TV, canape can pause it from your phone. It presses keys on the computer it runs on:
 
 ```bash
-canape pc play               # play or pause whatever is playing
+canape pc play               # play or pause the player in front (the space bar)
+canape pc click              # click the video so it listens to keys
 canape pc back               # skip back (the player's left arrow)
 canape pc volume up
 canape pc fullscreen
 ```
 
-The dashboard has the same buttons under **Computer**. Play and pause use the media key, so they work with Spotify, Music, or a video in a browser. The arrows and full screen go to the app in front, so keep the player in front.
+The dashboard has the same buttons on the computer's page. They go to the app in front, so keep the player in front. If a web video ignores them, tap **Click the video** first: web players only listen to keys once they have focus. For Spotify or Music, use **Play or pause music** (`canape pc media`), which sends the media key.
 
 The first time, macOS asks to allow the app canape runs in under **System Settings > Privacy & Security > Accessibility**. Volume works without it. macOS only for now: Linux and Windows are on the roadmap.
 

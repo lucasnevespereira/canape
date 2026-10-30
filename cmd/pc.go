@@ -9,8 +9,11 @@ import (
 
 // Words people type, mapped to the key they mean.
 var pcKeys = map[string]computer.Key{
-	"play": computer.PlayPause, "pause": computer.PlayPause, "playpause": computer.PlayPause,
-	"space": computer.Space, "back": computer.Back, "forward": computer.Forward,
+	// play and pause send the space bar: it reaches the player in front,
+	// which works for web video. The media key is there for Spotify and Music.
+	"play": computer.Space, "pause": computer.Space, "space": computer.Space,
+	"media": computer.PlayPause, "click": computer.Click,
+	"back": computer.Back, "forward": computer.Forward,
 	"fullscreen": computer.Fullscreen, "full": computer.Fullscreen,
 	"esc": computer.Escape, "escape": computer.Escape, "mute": computer.Mute,
 }
@@ -39,7 +42,7 @@ func pcCommand(args []string) error {
 		}
 	}
 	if !ok {
-		return fmt.Errorf("unknown key %q. Try: play, back, forward, volume up, volume down, mute, fullscreen, esc, space", args[0])
+		return fmt.Errorf("unknown key %q. Try: play, back, forward, click, volume up, volume down, mute, fullscreen, esc, media", args[0])
 	}
 	return computer.Press(key)
 }
