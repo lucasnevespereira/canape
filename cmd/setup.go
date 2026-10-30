@@ -80,7 +80,7 @@ func setup() error {
 		return err
 	}
 	fmt.Printf("\nDone. %q is set up. Try:\n", h.Name)
-	fmt.Println("  canape              what's set up here")
+	fmt.Println("  canape              this network in plain words")
 	fmt.Println("  canape wifi tv      the Wi-Fi QR on the TV")
 	fmt.Println("  canape serve        web dashboard")
 	return nil

@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/mcp"
 	"github.com/lucasnevespereira/canape/internal/server"
 	"github.com/lucasnevespereira/canape/internal/store"
@@ -18,7 +17,7 @@ const usage = `canape controls the TV and shares the Wi-Fi, from the couch or fr
 
 Get started
   canape setup                 pair this network's TV and router, save the Wi-Fi (safe to rerun)
-  canape                       what's set up here, and what to do next
+  canape                       this network in plain words: Wi-Fi, box, internet, devices
 
 TV
   canape tv on | off | status
@@ -79,7 +78,7 @@ func Run(args []string) int {
 	var err error
 	switch cmd {
 	case "":
-		err = status()
+		err = report()
 	case "help", "-h", "--help":
 		fmt.Printf(usage, store.Path())
 	case "version", "-v", "--version":
@@ -127,52 +126,7 @@ func Run(args []string) int {
 	return 0
 }
 
-// status is what bare `canape` prints: this network's home and what's next.
-func status() error {
-	h, err := home.Load()
-	if err != nil {
-		return err
-	}
-	if !h.Saved {
-		fmt.Printf("canape · new network (router %s)\n\nNothing set up here yet. Run: canape setup\n", h.Router)
-		return nil
-	}
-	fmt.Printf("canape · home %q (router %s)\n\n", h.Name, h.Router)
-
-	tvLine := "not paired"
-	if h.TV.Key != "" {
-		tvLine = fmt.Sprintf("%s at %s", home.BrandName(h.TV.Brand), h.TV.IP)
-		if t, err := h.ConnectTV(); err != nil {
-			tvLine += " · off or unreachable (canape tv on)"
-		} else {
-			tvLine += " · on" + nowShowing(t)
-			if v, err := t.Volume(); err == nil {
-				tvLine += fmt.Sprintf(", volume %d", v.Level)
-			}
-			t.Close()
-		}
-	}
-	row("TV", tvLine)
-	if h.Freebox.AppToken != "" {
-		row("Router", "Freebox, paired")
-	} else {
-		row("Router", "not paired")
-	}
-	if h.Wifi.SSID != "" {
-		row("Wi-Fi", h.Wifi.SSID+", QR ready (canape wifi tv)")
-	} else {
-		row("Wi-Fi", "not saved")
-	}
-
-	if h.TV.Key == "" || h.Wifi.SSID == "" {
-		fmt.Println("\nFinish with: canape setup")
-	} else {
-		fmt.Println("\nNext: canape serve for the web dashboard, or canape help")
-	}
-	return nil
-}
-
-func row(label, value string) { fmt.Printf("  %-8s %s\n", label, value) }
+func row(label, value string) { fmt.Printf("  %-9s %s\n", label, value) }
 
 func prompt(in *bufio.Reader, label, def string) string {
 	if def != "" {

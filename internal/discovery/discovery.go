@@ -433,11 +433,25 @@ func (d *Device) Kind() string {
 		return "Android TV / Google Cast"
 	case strings.HasPrefix(d.Host, "freebox-player"):
 		return "Freebox Player"
+	case has("mdns:ipp"), has("mdns:ipps"), has("mdns:printer"), has("mdns:pdl-datastream"):
+		return "Printer"
+	case strings.HasPrefix(d.HW, "Mac"), strings.Contains(lowerHost(d), "macbook"), strings.Contains(lowerHost(d), "imac"):
+		return "Mac"
+	case strings.Contains(lowerHost(d), "iphone"):
+		return "iPhone"
+	case strings.Contains(lowerHost(d), "ipad"):
+		return "iPad"
+	case has("ssdp:ZonePlayer"), has("mdns:sonos"), has("mdns:spotify-connect"), has("mdns:raop") && !has("mdns:airplay"):
+		return "Speaker"
 	case has("mdns:airplay"):
 		return "AirPlay device"
 	}
 	return ""
 }
+
+// lowerHost is the device's network name, lowercased, for name-based guesses
+// like "iphone-de-lucas.home".
+func lowerHost(d *Device) string { return strings.ToLower(d.Host + " " + d.Name) }
 
 func contains(s []int, v int) bool {
 	for _, x := range s {
