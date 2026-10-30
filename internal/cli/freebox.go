@@ -8,6 +8,7 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/router/freebox"
+	"github.com/lucasnevespereira/canape/internal/version"
 )
 
 func freeboxPairCommand() error {
@@ -27,7 +28,7 @@ func freeboxPair(h *home.Here) error {
 	device, _ := os.Hostname()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	token, err := freebox.Authorize(ctx, "canape", "0.1", device, func() {
+	token, err := freebox.Authorize(ctx, "canape", version.Get(), device, func() {
 		fmt.Println("   Look at the Freebox screen: use its arrows to pick \"Oui\" and confirm.")
 	})
 	if err != nil {

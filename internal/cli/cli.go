@@ -11,6 +11,7 @@ import (
 	"github.com/lucasnevespereira/canape/internal/mcp"
 	"github.com/lucasnevespereira/canape/internal/server"
 	"github.com/lucasnevespereira/canape/internal/store"
+	"github.com/lucasnevespereira/canape/internal/version"
 )
 
 const usage = `canape controls the TV and shares the Wi-Fi, from the couch or from Claude.
@@ -43,6 +44,7 @@ Network
 Run
   canape serve [addr]          phone dashboard (default :8080)
   canape mcp                   MCP server for Claude: claude mcp add canape -- canape mcp
+  canape version               which canape this is
 
 Advanced
   canape tv pair               pair a TV again (setup does it the first time)
@@ -65,6 +67,8 @@ func Run(args []string) int {
 		err = status()
 	case "help", "-h", "--help":
 		fmt.Printf(usage, store.Path())
+	case "version", "-v", "--version":
+		fmt.Println(version.String())
 	case "setup":
 		err = setup()
 	case "tv":

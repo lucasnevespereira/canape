@@ -12,6 +12,7 @@ import (
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/tv"
+	"github.com/lucasnevespereira/canape/internal/version"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -29,7 +30,7 @@ type nameInput struct {
 // Each call reads the state file and connects fresh, like a CLI command, so
 // nothing has to keep running between calls.
 func Run() error {
-	s := sdk.NewServer(&sdk.Implementation{Name: "canape", Version: "0.1.0"}, nil)
+	s := sdk.NewServer(&sdk.Implementation{Name: "canape", Version: version.Get()}, nil)
 	readOnly := &sdk.ToolAnnotations{ReadOnlyHint: true}
 
 	sdk.AddTool(s, &sdk.Tool{
