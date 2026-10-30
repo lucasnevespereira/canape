@@ -39,4 +39,4 @@ Pre-releases work too: `make release v=0.2.0-beta.1` publishes binaries and leav
 
 The Homebrew step needs a `HOMEBREW_TAP_TOKEN` secret on this repo: a GitHub token that can push to `lucasnevespereira/homebrew-tools`.
 
-If that step fails (it did on v0.1.0, with `unexpected HTTP 303 response`), update the formula by hand: set `url` and `sha256` in `canape.rb` in the tap. The checksum is `curl -sL <url> | shasum -a 256`.
+If that step fails, re-run it alone for the tag: `gh workflow run release.yml -f tag=v0.2.0`. As a last resort, set `url` and `sha256` in `canape.rb` in the tap by hand. The checksum is `curl -sL <url> | shasum -a 256`.

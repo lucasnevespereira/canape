@@ -5,6 +5,13 @@ on:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+-*"
+  # Re-runs only the Homebrew update for a tag that's already released.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Released tag to update in Homebrew, e.g. v0.2.0
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,6 +19,7 @@ permissions:
 jobs:
   release:
     name: Build & Publish
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -68,17 +76,19 @@ jobs:
   homebrew:
     name: Update Homebrew
     needs: release
-    # Pre-releases (v0.2.0-beta.1) stay out of brew.
-    if: ${{ !contains(github.ref_name, '-') }}
+    # Runs after a release, or alone from the manual trigger. Pre-releases
+    # (v0.2.0-beta.1) stay out of brew.
+    if: ${{ always() && !cancelled() && (github.event_name == 'workflow_dispatch' || needs.release.result == 'success') && !contains(inputs.tag || github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - name: Update tap formula
-        uses: mislav/bump-homebrew-formula-action@v3
+        # v3 fails with "unexpected HTTP 303" on GitHub's archive redirects. v4 doesn't.
+        uses: mislav/bump-homebrew-formula-action@v4.2
         with:
           formula-name: canape
           formula-path: canape.rb
           homebrew-tap: lucasnevespereira/homebrew-tools
-          tag-name: ${{ github.ref_name }}
-          commit-message: "canape ${{ github.ref_name }}"
+          tag-name: ${{ inputs.tag || github.ref_name }}
+          commit-message: "canape ${{ inputs.tag || github.ref_name }}"
         env:
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
