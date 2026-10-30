@@ -17,8 +17,8 @@ import (
 const usage = `canape explains the Wi-Fi you're on and controls what's on it: the TV, this computer.
 
 Get started
-  canape setup                 pair this network's TV and router, save the Wi-Fi (safe to rerun)
   canape                       this network in plain words: Wi-Fi, box, internet, devices
+  canape setup                 pair this network's TV and router, save the Wi-Fi (safe to rerun)
 
 TV
   canape tv on | off | status
