@@ -39,6 +39,7 @@ internal/router/freebox/   Freebox OS API client
 internal/wifi/             Wi-Fi QR payload and drawings (SVG, terminal, PNG), the big-QR page, ShowOnTV
 internal/server/           `canape serve`: login, JSON API under /api, index.html
 internal/mcp/              `canape mcp`: MCP tools over stdio (go-sdk imported as sdk)
+internal/version/          the version, stamped in by the release workflow (see CONTRIBUTING.md, Releasing)
 ```
 
 The CLI, the dashboard and the MCP tools all go through `home`. A new capability goes into `tv.TV` (or `home`) first, then gets a CLI command, then a dashboard control and an MCP tool if it fits.
@@ -51,17 +52,9 @@ The CLI, the dashboard and the MCP tools all go through `home`. A new capability
 - Ask the user to run `canape scan` instead of asking them for device details.
 - Commits: one-line Conventional Commits.
 
-## Plan
+## Roadmap
 
-Done, tested on the dev setup (LG 55SM8200 on webOS 4, Freebox Pop): LG control, phone dashboard, Freebox pairing and devices, Wi-Fi QR (terminal, `/wifi`, `canape wifi tv`, LG app), typing on the TV, MCP tools, `internal/` layout, homes, TV interface, `canape setup` and status.
-
-Next:
-- [ ] `canape setup` on a second real network (the new-home path is only simulated so far).
-- [ ] MCP used from Claude for real (only driven over raw stdio so far).
-- [ ] Samsung driver (Tizen WebSocket on 8002, token pairing) and Sony (IP control, pre-shared key), built in front of the real TVs. Scan's detection rules for both are unverified.
-- [ ] Releases: prebuilt binaries, a Homebrew tap and an install script. `canape serve` as a service (launchd, systemd). Docker with host networking.
-- [ ] Login QR printed by `canape serve`.
-- Later, maybe: Android TV via ADB (XGIMI, Freebox Player), Apple TV, Freebox connection stats, auto-extending LG Developer Mode.
+[ROADMAP.md](ROADMAP.md) is the plan. Check items off there when they land, and add what's left to verify on real hardware.
 
 ## Out of scope
 

@@ -11,9 +11,11 @@ There's no hub to install and nothing to keep running, and it works the same in 
 ## Quick start
 
 ```bash
-go install github.com/lucasnevespereira/canape@latest
+brew install lucasnevespereira/tools/canape
 canape setup
 ```
+
+No Homebrew? Download a binary for macOS, Linux or Raspberry Pi from [Releases](https://github.com/lucasnevespereira/canape/releases), or run `go install github.com/lucasnevespereira/canape@latest`.
 
 `canape setup` looks for your TV and router, asks you to accept canape on the TV screen, and saves the Wi-Fi to share. Run it again anytime: it only fills in what's missing.
 
@@ -79,13 +81,13 @@ The dashboard only runs while `canape serve` does. Most things work without it: 
 `canape mcp` is an MCP server. Claude starts it when needed, so nothing has to keep running.
 
 ```bash
-claude mcp add --scope user canape -- "$(go env GOPATH)/bin/canape" mcp
+claude mcp add --scope user canape -- canape mcp
 ```
 
-For Claude Desktop, add this to its config (Settings → Developer → Edit Config), with your own path:
+For Claude Desktop, add this to its config (Settings → Developer → Edit Config). Use the full path that `which canape` prints:
 
 ```json
-{ "mcpServers": { "canape": { "command": "/Users/you/go/bin/canape", "args": ["mcp"] } } }
+{ "mcpServers": { "canape": { "command": "/opt/homebrew/bin/canape", "args": ["mcp"] } } }
 ```
 
 Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
@@ -118,6 +120,7 @@ Everything stays in one file, `state.json`, in your user config folder (`~/Libra
 - [docs/freebox.md](docs/freebox.md): Freebox pairing and permissions
 - [docs/discovery.md](docs/discovery.md): finding devices by hand
 - [docs/adding-a-tv.md](docs/adding-a-tv.md): add support for another TV brand
+- [ROADMAP.md](ROADMAP.md): what's next
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 
 LG pairing uses the manifest from [PyWebOSTV](https://github.com/supersaiyanmode/PyWebOSTV) (MIT). Thanks.

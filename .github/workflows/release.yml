@@ -1,0 +1,84 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Test
+        run: |
+          go vet ./...
+          go test ./...
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          LDFLAGS="-s -w -X github.com/lucasnevespereira/canape/internal/version.Version=${{ steps.version.outputs.version }}"
+          # linux/arm is for Raspberry Pis running a 32-bit system.
+          for pair in darwin/amd64 darwin/arm64 linux/amd64 linux/arm64 linux/arm; do
+            os=${pair%/*}; arch=${pair#*/}
+            echo "building canape-$os-$arch"
+            GOOS=$os GOARCH=$arch GOARM=7 go build -ldflags "$LDFLAGS" -o "bin/canape-$os-$arch" .
+          done
+
+      - name: Package
+        run: |
+          cd bin
+          for f in canape-*; do
+            tar -czf "$f.tar.gz" "$f"
+            rm "$f"
+          done
+          sha256sum *.tar.gz > SHA256SUMS
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.version.outputs.tag }}
+          files: |
+            bin/*.tar.gz
+            bin/SHA256SUMS
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
+
+  homebrew:
+    name: Update Homebrew
+    needs: release
+    # Pre-releases (v0.2.0-beta.1) stay out of brew.
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update tap formula
+        uses: mislav/bump-homebrew-formula-action@v3
+        with:
+          formula-name: canape
+          formula-path: canape.rb
+          homebrew-tap: lucasnevespereira/homebrew-tools
+          tag-name: ${{ github.ref_name }}
+          commit-message: "canape ${{ github.ref_name }}"
+        env:
+          COMMITTER_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
