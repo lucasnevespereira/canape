@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 )
@@ -25,10 +26,18 @@ func CheckInternet() Internet {
 			c.Close()
 		}
 	}
-	start := time.Now()
-	if c, err := net.DialTimeout("tcp", "1.1.1.1:443", 3*time.Second); err == nil {
-		in.Online, in.Latency = true, time.Since(start)
+	// The fastest of three tries: a scan running at the same time can delay
+	// one of them several times over.
+	for i := 0; i < 3; i++ {
+		start := time.Now()
+		c, err := net.DialTimeout("tcp", "1.1.1.1:443", 3*time.Second)
+		if err != nil {
+			break
+		}
 		c.Close()
+		if d := time.Since(start); !in.Online || d < in.Latency {
+			in.Online, in.Latency = true, d
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -52,11 +61,12 @@ func (in Internet) Words() string {
 
 func speedWords(d time.Duration) string {
 	ms := d.Milliseconds()
+	words := "slow to respond"
 	switch {
 	case ms < 30:
-		return "quick to respond"
+		words = "quick to respond"
 	case ms < 80:
-		return "normal response time"
+		words = "normal response time"
 	}
-	return "slow to respond"
+	return fmt.Sprintf("%s (%d ms)", words, ms)
 }

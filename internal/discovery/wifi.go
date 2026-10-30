@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,19 +19,37 @@ type Link struct {
 	Rate     int    `json:"rate"`     // Mbps between this machine and the box
 }
 
-// SignalWords says how good the signal is, for people who don't read dBm.
+// SignalWords says how good the signal is in words, with the dBm after
+// them for those who read it.
 func (l Link) SignalWords() string {
+	dbm := fmt.Sprintf(" (%d dBm)", l.Signal)
 	switch {
 	case l.Signal == 0:
 		return ""
 	case l.Signal >= -55:
-		return "excellent signal"
+		return "excellent signal" + dbm
 	case l.Signal >= -67:
-		return "good signal"
+		return "good signal" + dbm
 	case l.Signal >= -75:
-		return "fair signal"
+		return "fair signal" + dbm
 	}
-	return "weak signal, move closer to the box"
+	return "weak signal" + dbm + ", move closer to the box"
+}
+
+// Details is the connection in numbers, e.g. "channel 108, 160 MHz wide,
+// 2401 Mbps link to the box". Empty when macOS gave none of them.
+func (l Link) Details() string {
+	var parts []string
+	if l.Channel != "" {
+		parts = append(parts, "channel "+l.Channel)
+	}
+	if l.Width != "" {
+		parts = append(parts, l.Width+" wide")
+	}
+	if l.Rate > 0 {
+		parts = append(parts, fmt.Sprintf("%d Mbps link to the box", l.Rate))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // SecurityWords grades the Wi-Fi encryption in plain words.

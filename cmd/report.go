@@ -66,6 +66,9 @@ func report() error {
 		fmt.Print("\ncanape · a network you haven't set up\n\n")
 	}
 	row("Wi-Fi", wifiLine(h, link))
+	if link != nil && link.Details() != "" {
+		row("", link.Details())
+	}
 	gatewayIP, _, _ := discovery.Router()
 	row("Box", boxLine(h, scan, gatewayIP))
 	row("Internet", inet.Words())
@@ -128,6 +131,7 @@ func report() error {
 	if h.TV.Key != "" || h.Wifi.SSID != "" {
 		next = append(next, [2]string{"canape serve", "do it from your phone"})
 	}
+	next = append(next, [2]string{"canape scan", "every device in detail"})
 	next = append(next, [2]string{"canape help", "everything canape can do"})
 	for i, n := range next {
 		label := ""
