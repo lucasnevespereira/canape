@@ -1,10 +1,10 @@
-// Command canape controls the home from the couch. See internal/cli.
+// Command canape controls the home from the couch. See cmd.
 package main
 
 import (
 	"os"
 
-	"github.com/lucasnevespereira/canape/internal/cli"
+	"github.com/lucasnevespereira/canape/cmd"
 )
 
-func main() { os.Exit(cli.Run(os.Args[1:])) }
+func main() { os.Exit(cmd.Run(os.Args[1:])) }

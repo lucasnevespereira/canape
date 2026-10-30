@@ -28,8 +28,8 @@ Supported today: LG webOS TVs, Freebox routers. Protocol notes live in `docs/` (
 ## Layout
 
 ```
-main.go                    calls cli.Run, nothing else
-internal/cli/              commands and terminal output. setup.go is the guided flow
+main.go                    calls cmd.Run, nothing else
+cmd/                       the canape command: arguments and terminal output. setup.go is the guided flow
 internal/home/             the current network's home: Load/Save, PairTV/ConnectTV/WakeTV via drivers.go, Status, Devices
 internal/store/            state.json: homes keyed by router MAC, dashboard key, legacy migration
 internal/discovery/        network scan (SSDP, mDNS, ARP, reverse DNS, control ports), Router(), MAC(), LocalIP(), FindFreebox()

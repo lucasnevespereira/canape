@@ -1,5 +1,5 @@
-// Package cli is the canape command: argument parsing and terminal output.
-package cli
+// Package cmd is the canape command: argument parsing and terminal output.
+package cmd
 
 import (
 	"bufio"
