@@ -59,7 +59,10 @@ func TestParseLink(t *testing.T) {
 	if l.Band != "5 GHz" || l.Width != "160 MHz" || l.Channel != "108" || l.Standard != "Wi-Fi 6" || l.Security != "WPA2" || l.Signal != -40 {
 		t.Fatalf("parseLink = %+v", l)
 	}
-	if l.SignalWords() != "excellent signal" || l.SecurityWords() != "WPA2 (secure)" {
+	if l.SignalWords() != "excellent signal (-40 dBm)" || l.SecurityWords() != "WPA2 (secure)" {
 		t.Fatalf("words: %q %q", l.SignalWords(), l.SecurityWords())
+	}
+	if d := l.Details(); d != "channel 108, 160 MHz wide, 2401 Mbps link to the box" {
+		t.Fatalf("details: %q", d)
 	}
 }
