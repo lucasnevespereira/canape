@@ -1,8 +1,10 @@
 # canape
 
-Control the TV and share the Wi-Fi, from the couch, your phone or Claude.
+**Control the TV and share the Wi-Fi on any network. No hub, one command, works with Claude.**
 
-canape is one small program. Run it on a laptop or a Raspberry Pi on the same Wi-Fi as your TV: it finds the TV and the router, pairs with them, and keeps the Wi-Fi password ready to share as a QR code.
+canape is a zero-setup remote for the network you're on. Run `canape setup` on a laptop or a Raspberry Pi: it finds the TV and the router, pairs with them, and keeps the Wi-Fi ready to share as a QR code. Then use it from the terminal, your phone or Claude.
+
+There's no hub to install and nothing to keep running, and it works the same in any home you walk into: yours, your family's, a rental.
 
 > Early project. Works today with LG webOS TVs and Freebox routers. Samsung and Sony TVs are next, see [supported devices](#supported-devices).
 
@@ -45,6 +47,10 @@ On a new network, start with `canape setup`. Run `canape scan` when you're curio
 - **Phone dashboard:** the TV remote, inputs, apps and the Wi-Fi QR, on your phone.
 - **Claude:** an MCP server, so you can ask "put YouTube on the TV" or "who's on the network?".
 - **Every network you visit:** your home, your sister's. canape keeps one setup per network and picks the right one by itself.
+
+## Not a home hub
+
+Home Assistant is a hub: installed once per house, always on, thousands of integrations and automations. canape is the other way around: one command on any network, nothing running in the background, a few devices done well. They get along: Home Assistant for the lights and automations at home, canape for the TV and the Wi-Fi wherever you are.
 
 ## Supported devices
 

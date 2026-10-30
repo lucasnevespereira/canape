@@ -1,6 +1,17 @@
 # canape
 
-A CLI, phone dashboard and MCP server that control TVs and share the Wi-Fi on whatever network the machine is on. One Go binary; runs on a laptop or a Pi on the same LAN as the devices. Open source, MIT.
+A zero-setup remote for the network you're on: the TV, the Wi-Fi and the devices, from the terminal, a phone or Claude. One Go binary; runs on a laptop or a Pi on the same LAN as the devices. Open source, MIT.
+
+## Direction
+
+Tagline: *Control the TV and share the Wi-Fi on any network. No hub, one command, works with Claude.*
+
+What sets canape apart, in the order users care: no hub and one command (`canape setup`), three ways to use it (terminal, phone, Claude), and it works in any home you walk into.
+
+**The filter for every feature:** it belongs in canape if it works in one command on a network canape just joined, without a server that has to run all the time. The dashboard is fine because it's optional.
+
+- In: more TV brands, Chromecast, Apple TV; "what's this device?", new-device alerts; waking a computer; router speed and status; named scenes ("movie mode"); handing lights and sensors to an existing Home Assistant.
+- Out: automations ("when X, do Y"), history and graphs, a plugin marketplace, anything that needs a 24/7 server, writing router settings. That's Home Assistant's job.
 
 Supported today: LG webOS TVs, Freebox routers. Protocol notes live in `docs/` (lg.md, freebox.md, discovery.md); read the one for the device you touch before changing its code.
 
@@ -54,4 +65,4 @@ Next:
 
 ## Out of scope
 
-Cloud servers or relays, writing router settings, tracking what people browse, rooting TVs, brands nobody has asked for.
+What fails the filter in Direction, plus: cloud servers or relays, tracking what people browse, rooting TVs.
