@@ -22,7 +22,8 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - [x] `canape wake`: wake a computer the user saved
 - [x] Claude through MCP (`canape mcp`)
 - [x] Homes: one setup per network, picked automatically
-- [x] `canape setup`, the status screen, help grouped by task
+- [x] `canape setup`, help grouped by task
+- [x] The network report: bare `canape` shows the Wi-Fi (band, signal, security), the box, whether the internet works, and every device grouped by kind, then what to do next. Works without router access
 - [x] A moved TV is found again, setup names TVs it can't control yet
 - [x] `canape version`, releases with binaries, Homebrew updated automatically
 
@@ -32,11 +33,11 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - The MCP tools from Claude itself (only driven by raw test messages so far)
 - The dashboard added to an iPhone home screen: it should log itself in on first launch
 - Play/pause with the space bar and Click the video on a web player
+- The network report on a network without router access (a friend's box, a hotel), and on Linux where the Wi-Fi line is empty for now
 
 ## Next
 
-- **The network report.** Bare `canape` on any network, even without router access: the Wi-Fi (name, band, signal, security), the box, whether the internet works, and every device grouped by kind in plain words, ending with what you can do there ("press Enter to pair the LG TV"). The heart of canape.
-- **`canape check`: is it the internet or the Wi-Fi?** The question everyone asks. Checks the router, the internet and name lookups (DNS), then answers in one sentence with what to do. Also in the dashboard as a big "Check my connection" button.
+- **`canape check`: is it the internet or the Wi-Fi?** The question everyone asks. The report already answers it in one line. A command of its own skips the device scan, so the answer comes in a second. Also in the dashboard as a big "Check my connection" button.
 - **No typing the Wi-Fi password.** Read it from the Mac's Keychain for the network you're on, after one macOS prompt.
 - **Setup from the phone.** Pair the TV and the router, save the Wi-Fi, all from the dashboard. Today it needs `canape setup` in a terminal, which loses most people.
 - **French.** The dashboard and the CLI in French, picked from the phone's or the computer's language.

@@ -22,7 +22,7 @@ No Homebrew? Download a binary for macOS, Linux or Raspberry Pi from [Releases](
 Then:
 
 ```bash
-canape                   # what's set up here
+canape                   # this network in plain words
 canape tv app youtube    # open YouTube on the TV
 canape wifi tv           # show the Wi-Fi QR on the TV for your guests
 canape serve             # web dashboard
@@ -37,7 +37,7 @@ canape serve             # web dashboard
 | `canape scan` | Lists every device on the network: TVs, phones, the router, cameras. Use it to look around, or to report a TV canape doesn't support yet. | Nothing |
 | `canape setup` | Pairs the TV and router it finds, and saves the Wi-Fi to share. | This network's home |
 | `canape devices` | Who's online right now, from the router's own list (Freebox only). | Nothing |
-| `canape` | What's set up on this network, and what to do next. | Nothing |
+| `canape` | This network in plain words: Wi-Fi quality, the box, the internet, every device, and what to do next. | Nothing |
 
 On a new network, start with `canape setup`. Run `canape scan` when you're curious, or when setup finds no TV it knows.
 
