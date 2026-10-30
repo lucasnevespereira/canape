@@ -4,257 +4,515 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="canape">
-<meta name="theme-color" content="#16130f" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f6f1e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#142a24" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#e6ebe4" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="/icons/180.png">
 <title>canape</title>
 <style>
+  /* Green velvet and brass: a sofa, and the knobs of an old TV set. */
   :root {
-    --bg: #f6f1e8; --surface: #fffdf9; --line: #e6dccb; --text: #2a241c;
-    --muted: #8a7d6b; --accent: #b8691c; --accent-text: #fff; --danger: #b3412e;
+    --bg: #e6ebe4; --surface: #f7f9f5; --raised: #ffffff; --line: #cfd8cd;
+    --text: #1d332d; --muted: #5f7069; --accent: #9a7428; --accent-ink: #ffffff;
+    --accent-soft: #eadfc4; --danger: #a8432f; --on: #3f8f5f;
+    --font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #16130f; --surface: #221d17; --line: #332b22; --text: #f3ece2;
-      --muted: #9c8f7d; --accent: #e8a24a; --accent-text: #1b150e; --danger: #e0715c;
+      --bg: #142a24; --surface: #1c3830; --raised: #234339; --line: #2d4d43;
+      --text: #efe9dc; --muted: #93a89e; --accent: #d6b46a; --accent-ink: #1a1408;
+      --accent-soft: #3b4632; --danger: #e08a6f; --on: #7fd39b;
     }
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.4 system-ui, -apple-system, sans-serif;
+    margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 var(--font);
     -webkit-tap-highlight-color: transparent;
   }
-  main, header { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* Header */
   header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding-top: max(20px, env(safe-area-inset-top)); padding-bottom: 12px;
+    display: flex; align-items: center; gap: 12px;
+    padding: max(14px, env(safe-area-inset-top)) 20px 10px; max-width: 1200px; margin: 0 auto;
   }
-  h1 { font-size: 22px; margin: 0; letter-spacing: -0.02em; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 28px 0 10px; }
-  .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; }
-  .status i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-  .status.on i { background: #5fb36b; }
-  button {
-    font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--line);
-    border-radius: 14px; min-height: 48px; padding: 0 16px; cursor: pointer;
-    transition: transform 80ms ease, background 120ms ease;
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 20px; letter-spacing: -0.01em; }
+  .brand svg { width: 26px; height: 26px; color: var(--accent); }
+  .home-name { color: var(--muted); font-size: 15px; }
+  .status { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 14px; color: var(--muted); }
+  .status i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .status.on i { background: var(--on); box-shadow: 0 0 0 4px color-mix(in srgb, var(--on) 20%, transparent); }
+
+  /* Panels: tabs on a phone, side by side on a wide screen */
+  main { max-width: 1200px; margin: 0 auto; padding: 4px 20px calc(96px + env(safe-area-inset-bottom)); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel > h2 { display: none; }
+  h3 { font-size: 15px; font-weight: 700; color: var(--muted); margin: 28px 0 10px; }
+
+  /* Remote */
+  .topline { display: flex; align-items: center; gap: 14px; margin: 6px 0 18px; }
+  .showing { margin-left: auto; min-width: 0; color: var(--muted); font-size: 15px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .showing b { color: var(--text); font-weight: 700; }
+  .round {
+    width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+    display: grid; place-items: center; transition: transform 80ms ease, background 120ms ease;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
   }
-  button:active { transform: scale(0.97); }
-  button[aria-current="true"], button[aria-pressed="true"] {
-    background: var(--accent); color: var(--accent-text); border-color: var(--accent);
+  .round svg { width: 22px; height: 22px; }
+  .round:active, .pressed { transform: scale(0.94); background: var(--accent-soft); }
+  #power-off { color: var(--danger); }
+  .round[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .console { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+  .side { display: grid; gap: 12px; justify-items: center; }
+
+  .rocker {
+    width: 60px; border-radius: 30px; border: 1px solid var(--line); background: var(--surface);
+    display: grid; grid-template-rows: 60px auto 60px; justify-items: center; align-items: center; overflow: hidden;
   }
-  button:disabled { opacity: 0.5; }
-  .power { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; font-weight: 600; }
-  .power svg { width: 22px; height: 22px; }
-  #power-on { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-  .controls { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; margin-top: 8px; }
-  #power-off { width: 56px; min-height: 56px; padding: 0; color: var(--danger); }
-  .volume { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
-  .volume button { border: 0; min-width: 48px; font-size: 22px; }
-  .volume output { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; min-width: 3ch; text-align: center; }
-  #mute { min-height: 56px; }
-  .keys { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
-  .type { display: flex; gap: 10px; margin-top: 10px; }
+  .rocker button {
+    width: 100%; height: 100%; border: 0; background: transparent; font-size: 26px; font-weight: 600;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  .rocker button:active, .rocker button.pressed { background: var(--accent-soft); }
+  .rocker output { font-size: 19px; font-weight: 800; font-variant-numeric: tabular-nums; padding: 2px 0; }
+
+  /* The dial: the one bold thing on the page */
+  .dial {
+    position: relative; width: min(100%, 248px); aspect-ratio: 1; margin: 0 auto; border-radius: 50%;
+    background: radial-gradient(circle at 50% 38%, var(--raised), var(--surface) 70%);
+    border: 2px solid var(--line); box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .dial button {
+    position: absolute; border: 0; background: transparent; display: grid; place-items: center; color: var(--muted);
+    touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  .dial button svg { width: 26px; height: 26px; }
+  .dial .up    { top: 0; left: 28%; width: 44%; height: 30%; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+  .dial .down  { bottom: 0; left: 28%; width: 44%; height: 30%; border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+  .dial .left  { left: 0; top: 28%; width: 30%; height: 44%; border-radius: 100% 0 0 100% / 50% 0 0 50%; }
+  .dial .right { right: 0; top: 28%; width: 30%; height: 44%; border-radius: 0 100% 100% 0 / 0 50% 50% 0; }
+  .dial .up:active, .dial .down:active, .dial .left:active, .dial .right:active, .dial .pressed:not(.ok) { color: var(--accent); background: var(--accent-soft); }
+  .dial .ok {
+    inset: 30%; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+    font-weight: 800; font-size: 20px; box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+    transition: transform 80ms ease;
+  }
+  .dial .ok:active, .dial .ok.pressed { transform: scale(0.94); }
+
+  .hint { display: none; margin: 14px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+  @media (hover: hover) and (pointer: fine) { .hint { display: block; } }
+
+  .type { display: flex; gap: 10px; margin-top: 18px; }
   .type input {
-    flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; font: inherit; color: var(--text);
-    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    flex: 1; min-width: 0; min-height: 50px; padding: 0 16px; font: inherit; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 25px;
   }
-  .type input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .note { margin: 6px 2px 0; font-size: 13px; color: var(--muted); }
-  .keys button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; }
-  .keys svg { width: 20px; height: 20px; }
+  .pill {
+    min-height: 50px; padding: 0 20px; border-radius: 25px; border: 1px solid var(--line); background: var(--surface);
+    font-weight: 600;
+  }
+  .pill.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-  #wifi { padding-bottom: 32px; }
-  .wifi { display: flex; gap: 16px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
-  .wifi img { width: 112px; height: 112px; display: block; border-radius: 8px; }
-  .wifi > div { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
-  .ssid { margin: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .link { color: var(--accent); font-size: 14px; }
-  .grid button { text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hint { color: var(--muted); text-align: center; margin-top: 16px; }
-  code { font-size: 0.9em; }
-  #toast {
-    position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom));
-    max-width: 448px; margin: 0 auto; padding: 12px 16px; border-radius: 12px;
-    background: var(--text); color: var(--bg); font-size: 14px;
-    opacity: 0; transform: translateY(8px); transition: opacity 200ms, transform 200ms; pointer-events: none;
+  .chips button { min-height: 44px; padding: 0 18px; border-radius: 22px; border: 1px solid var(--line); background: var(--surface); }
+  .chips button[aria-current="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+
+  .apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 14px 10px; }
+  .apps button { border: 0; background: none; padding: 0; display: grid; justify-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .apps .tile {
+    width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center;
+    font-weight: 800; font-size: 20px; color: #fff; letter-spacing: -0.02em;
   }
-  #toast.show { opacity: 1; transform: none; }
+  .apps span:last-child { max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .apps button[aria-current="true"] .tile { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .apps button[aria-current="true"] { color: var(--text); font-weight: 700; }
+
+  .empty { padding: 36px 8px; text-align: center; color: var(--muted); }
+  .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
+  .empty code { font-family: inherit; font-weight: 700; color: var(--text); }
+  .big {
+    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; margin-top: 18px;
+    border-radius: 32px; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 18px;
+  }
+  .big svg { width: 22px; height: 22px; }
+
+  /* Wi-Fi */
+  .qr { background: #fff; border-radius: 22px; padding: 12px; width: min(78vw, 300px); margin: 12px auto 18px; }
+  .qr img { display: block; width: 100%; aspect-ratio: 1; }
+  .wifi-text { text-align: center; }
+  .wifi-text p { margin: 4px 0; color: var(--muted); }
+  .wifi-text b { color: var(--text); font-size: 18px; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
+  .wifi-actions { display: flex; justify-content: center; margin-top: 18px; }
+
+  /* Network */
+  .devices { list-style: none; margin: 8px 0 0; padding: 0; }
+  .devices li { padding: 11px 2px; border-bottom: 1px solid var(--line); }
+  .devices .name { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .devices .meta { display: block; color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .net-head { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; color: var(--muted); }
+
+  /* Tabs */
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, 1fr);
+    padding: 8px 12px max(10px, env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line);
+  }
+  nav button { border: 0; background: none; display: grid; justify-items: center; gap: 3px; padding: 6px 0; font-size: 12px; color: var(--muted); }
+  nav svg { width: 24px; height: 24px; }
+  nav button[aria-current="page"] { color: var(--accent); font-weight: 700; }
+
+  /* Wide screens: everything at once, no tabs */
+  @media (min-width: 960px) {
+    /* minmax(0, …) lets a column shrink below its longest word, like a long device name */
+    main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr); gap: 28px; padding-bottom: 40px; align-items: start; }
+    .panel { display: block; background: var(--surface); border: 1px solid var(--line); border-radius: 28px; padding: 6px 24px 24px; }
+    .panel > h2 { display: block; font-size: 17px; margin: 18px 0 6px; }
+    .round, .chips button, .rocker, .type input, .pill { background: var(--bg); }
+    .qr { width: 240px; }
+    nav { display: none; }
+  }
+
+  #toast {
+    position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom)); transform: translate(-50%, 8px);
+    max-width: min(92vw, 440px); padding: 12px 18px; border-radius: 22px; background: var(--text); color: var(--bg);
+    font-size: 14px; opacity: 0; transition: opacity 180ms, transform 180ms; pointer-events: none; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (min-width: 960px) { #toast { bottom: 28px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sofa" viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h12a2 2 0 0 1 2 2v3a2.5 2.5 0 0 1 2 2.45V18h-2v2h-2v-2H6v2H4v-2H2v-4.55A2.5 2.5 0 0 1 4 11V8a2 2 0 0 1 2-2Zm0 2v3.3c.6.4 1 1.1 1 1.9V14h10v-.8c0-.8.4-1.5 1-1.9V8H6Z"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-remote" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/><circle cx="12" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M10 14h.01M14 14h.01M10 17h.01M14 17h.01"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-network" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4"/></symbol>
+</svg>
+
 <header>
-  <h1>canape</h1>
-  <span id="status" class="status"><i></i><span>Connecting…</span></span>
+  <div class="brand"><svg><use href="#i-sofa"/></svg>canape</div>
+  <span class="home-name" id="home-name"></span>
+  <span class="status" id="status"><i></i><span>Connecting</span></span>
 </header>
-<main>
-  <section id="login" hidden>
-    <p class="hint">This device isn't logged in. Open the link that <code>canape serve</code> printed in your terminal.</p>
-  </section>
 
-  <section id="off" hidden>
-    <button id="power-on" class="power">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
-      <span>Turn TV on</span>
-    </button>
-    <p class="hint" id="off-hint">The TV is off or unreachable.</p>
-  </section>
+<section id="login" class="empty" hidden>
+  <strong>This device isn't logged in</strong>
+  Run <code>canape serve</code> on your computer and scan the QR code it shows.
+</section>
 
-  <section id="tv" hidden>
-    <div class="controls">
-      <button id="power-off" aria-label="Turn TV off">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0"/></svg>
-      </button>
-      <div class="volume">
-        <button id="vol-down" aria-label="Volume down">−</button>
-        <output id="vol">…</output>
-        <button id="vol-up" aria-label="Volume up">+</button>
+<main id="app">
+  <section class="panel" id="panel-remote">
+    <h2>Remote</h2>
+
+    <div id="no-tv" class="empty" hidden>
+      <strong>No TV on this network yet</strong>
+      Run <code>canape setup</code> on your computer to pair it.
+    </div>
+
+    <div id="tv-off" hidden>
+      <div class="empty"><strong>The TV is off</strong>Or it can't be reached right now.</div>
+      <button class="big" id="power-on"><svg><use href="#i-power"/></svg><span>Turn the TV on</span></button>
+    </div>
+
+    <div id="tv-on" hidden>
+      <div class="topline">
+        <button class="round" id="power-off" aria-label="Turn the TV off"><svg><use href="#i-power"/></svg></button>
+        <div class="showing" id="showing"></div>
       </div>
-      <button id="mute" aria-pressed="false">Mute</button>
+
+      <div class="console">
+        <div class="side">
+          <div class="rocker" role="group" aria-label="Volume">
+            <button id="vol-up" aria-label="Volume up">+</button>
+            <output id="vol" aria-live="polite">…</output>
+            <button id="vol-down" aria-label="Volume down">−</button>
+          </div>
+          <button class="round" id="mute" aria-pressed="false" aria-label="Mute"><svg><use href="#i-mute"/></svg></button>
+        </div>
+
+        <div class="dial" role="group" aria-label="Arrows">
+          <button class="up" data-key="UP" aria-label="Up"><svg><use href="#i-chev"/></svg></button>
+          <button class="right" data-key="RIGHT" aria-label="Right"><svg style="transform:rotate(90deg)"><use href="#i-chev"/></svg></button>
+          <button class="down" data-key="DOWN" aria-label="Down"><svg style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button>
+          <button class="left" data-key="LEFT" aria-label="Left"><svg style="transform:rotate(-90deg)"><use href="#i-chev"/></svg></button>
+          <button class="ok" data-key="ENTER">OK</button>
+        </div>
+
+        <div class="side">
+          <button class="round" data-key="HOME" aria-label="Home"><svg><use href="#i-home"/></svg></button>
+          <button class="round" data-key="BACK" aria-label="Back"><svg><use href="#i-back"/></svg></button>
+          <button class="round" id="keyboard" aria-label="Type on the TV" aria-expanded="false"><svg><use href="#i-keyboard"/></svg></button>
+        </div>
+      </div>
+      <p class="hint">On a keyboard: arrows to move, Enter for OK, Esc for Back, + and − for volume, M to mute.</p>
+
+      <form class="type" id="type-form" hidden>
+        <input id="type-text" placeholder="Type on the TV" aria-label="Text to type on the TV"
+          autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+        <button class="pill primary" type="submit">Send</button>
+      </form>
+
+      <h3>Inputs</h3>
+      <div class="chips" id="inputs"></div>
+      <h3>Apps</h3>
+      <div class="apps" id="apps"></div>
     </div>
-    <div class="keys">
-      <button data-key="HOME">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>
-        Home
-      </button>
-      <button data-key="BACK">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6l-6 6 6 6M4 12h16"/></svg>
-        Back
-      </button>
-      <button data-key="ENTER">OK</button>
-    </div>
-    <form class="type" id="type-form">
-      <input id="type-text" placeholder="Type on the TV" aria-label="Text to type on the TV"
-        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
-      <button type="submit">Send</button>
-    </form>
-    <p class="note">Select a text field on the TV first.</p>
-    <h2>Inputs</h2>
-    <div id="inputs" class="chips"></div>
-    <h2>Apps</h2>
-    <div id="apps" class="grid"></div>
   </section>
 
-  <section id="wifi" hidden>
+  <section class="panel" id="panel-wifi">
     <h2>Wi-Fi</h2>
-    <div class="wifi">
-      <a href="/wifi" aria-label="Open the Wi-Fi QR code full screen"><img src="/wifi.svg" alt="Wi-Fi QR code"></a>
-      <div>
-        <p class="ssid" id="ssid"></p>
-        <button id="wifi-tv">Show on TV</button>
-        <a class="link" href="/wifi">Full screen</a>
-      </div>
+    <div id="no-wifi" class="empty" hidden>
+      <strong>No Wi-Fi saved for this network</strong>
+      Run <code>canape wifi set</code> on your computer.
     </div>
+    <div id="wifi" hidden>
+      <div class="qr"><img id="wifi-qr" alt="QR code to join the Wi-Fi"></div>
+      <div class="wifi-text">
+        <p>Point a phone camera at the code, or type:</p>
+        <p>Network <b id="ssid"></b></p>
+        <p>Password <b id="password"></b></p>
+      </div>
+      <div class="wifi-actions"><button class="pill primary" id="wifi-tv">Show on the TV</button></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-network">
+    <h2>Network</h2>
+    <div class="net-head"><span id="net-count">Who's online</span><button class="pill" id="net-refresh">Refresh</button></div>
+    <div id="net-error" class="empty" hidden></div>
+    <ul class="devices" id="devices"></ul>
   </section>
 </main>
+
+<nav aria-label="Sections">
+  <button data-tab="remote"><svg><use href="#i-remote"/></svg>Remote</button>
+  <button data-tab="wifi"><svg><use href="#i-wifi"/></svg>Wi-Fi</button>
+  <button data-tab="network"><svg><use href="#i-network"/></svg>Network</button>
+</nav>
 <div id="toast" role="status"></div>
 
 <script>
 const $ = (s) => document.querySelector(s);
-let tv = null;
+const wide = matchMedia("(min-width: 960px)");
+const state = { home: null, tv: null, tab: "remote" };
+
+class LoggedOut extends Error {}
 
 async function api(path, body) {
   const opts = body === undefined ? {} :
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
   const res = await fetch(path, opts);
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401) { show("login"); throw new Error("login"); }
+  if (res.status === 401) { showLoggedOut(); throw new LoggedOut(); }
   if (!res.ok) throw new Error(data.error || res.statusText);
   return data;
 }
 
-let ssid = "";
-
-function show(id) {
-  for (const s of ["login", "off", "tv"]) $("#" + s).hidden = s !== id;
-  $("#wifi").hidden = id === "login" || !ssid;
-  $("#wifi-tv").disabled = id !== "tv";
-  const on = id === "tv";
-  $("#status").classList.toggle("on", on);
-  $("#status span").textContent = { login: "Logged out", off: "TV off", tv: "TV on" }[id];
-}
-
 let toastTimer;
-function notify(msg) {
+function toast(msg) {
   $("#toast").textContent = msg;
   $("#toast").classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 3500);
+  toastTimer = setTimeout(() => $("#toast").classList.remove("show"), 3200);
+}
+function fail(e) { if (!(e instanceof LoggedOut)) toast(e.message); }
+
+function showLoggedOut() {
+  $("#login").hidden = false;
+  $("#app").hidden = true;
+  document.querySelector("nav").hidden = true;
+  setStatus("Logged out", false);
 }
 
-async function refresh() {
+function setStatus(text, on) {
+  $("#status").classList.toggle("on", on);
+  $("#status span").textContent = text;
+}
+
+// Tabs on a phone. On a wide screen every panel shows and the tabs hide.
+function setTab(tab) {
+  state.tab = tab;
+  for (const p of document.querySelectorAll(".panel")) p.classList.toggle("active", p.id === "panel-" + tab);
+  for (const b of document.querySelectorAll("nav button")) b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false");
+  history.replaceState(null, "", "#" + tab);
+  try { localStorage.setItem("tab", tab); } catch (e) {}
+  if (tab === "network") loadDevices();
+}
+
+async function loadHome() {
   try {
-    tv = await api("/api/tv");
-    render();
-  } catch (e) {
-    if (e.message !== "login") notify(e.message);
+    state.home = await api("/api/home");
+  } catch (e) { return fail(e); }
+  const h = state.home;
+  $("#home-name").textContent = h.name;
+  $("#no-wifi").hidden = !!h.ssid;
+  $("#wifi").hidden = !h.ssid;
+  if (h.ssid) {
+    $("#ssid").textContent = h.ssid;
+    $("#password").textContent = h.password;
+    $("#wifi-qr").src = "/wifi.svg?" + encodeURIComponent(h.ssid);
   }
 }
 
-function buttons(container, items, current, onPick) {
-  container.replaceChildren(...items.map((it) => {
-    const b = document.createElement("button");
-    b.textContent = it.label;
-    b.setAttribute("aria-current", String(it.appId === current));
-    b.onclick = () => onPick(it);
-    return b;
-  }));
+async function refreshTV() {
+  if (!state.home) return;
+  if (!state.home.tv) {
+    showRemote("none");
+    return;
+  }
+  try {
+    state.tv = await api("/api/tv");
+  } catch (e) { return fail(e); }
+  showRemote(state.tv.on ? "on" : "off");
 }
 
-function render() {
-  if (!tv.on) { show("off"); return; }
-  show("tv");
+function showRemote(mode) {
+  $("#no-tv").hidden = mode !== "none";
+  $("#tv-off").hidden = mode !== "off";
+  $("#tv-on").hidden = mode !== "on";
+  $("#wifi-tv").disabled = mode !== "on";
+  setStatus({ none: "No TV", off: "TV off", on: "TV on" }[mode], mode === "on");
+  if (mode === "on") renderRemote();
+}
+
+function renderRemote() {
+  const tv = state.tv;
   $("#vol").textContent = tv.volume;
   $("#mute").setAttribute("aria-pressed", String(tv.muted));
-  buttons($("#inputs"), tv.inputs.map((i) => ({ id: i.id, label: i.label, appId: i.id })), tv.current,
-    (i) => act("/api/tv/input", { id: i.id }));
-  buttons($("#apps"), tv.apps.map((a) => ({ id: a.id, label: a.title, appId: a.id })), tv.current,
-    (a) => act("/api/tv/app", { id: a.id }));
+
+  // Hide inputs with nothing plugged in and no name of their own, like a bare "HDMI 3".
+  const inputs = tv.inputs.filter((i) => i.connected || i.id === tv.current || !/^HDMI \d+$/i.test(i.label));
+  $("#inputs").replaceChildren(...inputs.map((i) => {
+    const b = document.createElement("button");
+    b.textContent = i.label;
+    b.setAttribute("aria-current", String(i.id === tv.current));
+    b.onclick = () => act("/api/tv/input", { id: i.id });
+    return b;
+  }));
+
+  $("#apps").replaceChildren(...tv.apps.map((a) => {
+    const b = document.createElement("button");
+    b.setAttribute("aria-current", String(a.id === tv.current));
+    b.setAttribute("aria-label", "Open " + a.title);
+    const tile = document.createElement("span");
+    tile.className = "tile";
+    tile.textContent = initials(a.title);
+    tile.style.background = tileColors[hash(a.id) % tileColors.length];
+    const name = document.createElement("span");
+    name.textContent = a.title;
+    b.append(tile, name);
+    b.onclick = () => act("/api/tv/app", { id: a.id });
+    return b;
+  }));
+
+  const now = inputs.find((i) => i.id === tv.current) || tv.apps.find((a) => a.id === tv.current);
+  $("#showing").replaceChildren();
+  if (now) {
+    const b = document.createElement("b");
+    b.textContent = now.label || now.title;
+    $("#showing").append("Showing ", b);
+  }
+}
+
+function initials(title) {
+  const words = title.replace(/[^\p{L}\p{N} ]/gu, " ").trim().split(/\s+/);
+  return ((words[0] || "?")[0] + (words[1] ? words[1][0] : "")).toUpperCase();
+}
+// Muted upholstery colors that sit well on the green, picked by app ID so
+// an app keeps its color.
+const tileColors = ["#8a6d3b", "#5e7d5a", "#3f6f75", "#6d4f6f", "#4f5f7d", "#8a5a44", "#5b6b3a"];
+function hash(s) {
+  let h = 0;
+  for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h;
 }
 
 async function act(path, body) {
-  try { await api(path, body); } catch (e) { if (e.message !== "login") notify(e.message); }
-  refresh();
+  try { await api(path, body); } catch (e) { fail(e); }
+  refreshTV();
 }
 
-// Taps change the number right away. The TV gets the final value once tapping pauses.
+// One key at a time: a held arrow skips repeats while the TV is still busy.
+let keyBusy = false;
+async function pressKey(key) {
+  if (keyBusy) return;
+  keyBusy = true;
+  try { await api("/api/tv/key", { key }); } catch (e) { fail(e); }
+  keyBusy = false;
+}
+
+// The number changes right away. The TV gets the final value once taps pause.
 let volTimer;
-function changeVolume(delta) {
-  tv.volume = Math.max(0, Math.min(100, tv.volume + delta));
-  $("#vol").textContent = tv.volume;
+function nudgeVolume(delta) {
+  if (!state.tv || !state.tv.on) return;
+  state.tv.volume = Math.max(0, Math.min(100, state.tv.volume + delta));
+  $("#vol").textContent = state.tv.volume;
   clearTimeout(volTimer);
-  volTimer = setTimeout(() => api("/api/tv/volume", { volume: tv.volume }).catch((e) => notify(e.message)), 250);
+  volTimer = setTimeout(() => api("/api/tv/volume", { volume: state.tv.volume }).catch(fail), 250);
 }
 
-$("#vol-up").onclick = () => changeVolume(1);
-$("#vol-down").onclick = () => changeVolume(-1);
-$("#mute").onclick = () => act("/api/tv/mute", { mute: !tv.muted });
-for (const b of document.querySelectorAll("[data-key]")) {
-  b.onclick = () => act("/api/tv/key", { key: b.dataset.key });
+// Hold to repeat, like a real remote. Keyboard activation fires once.
+function holdable(el, fire) {
+  let delay, repeat;
+  const stop = () => { clearTimeout(delay); clearInterval(repeat); el.classList.remove("pressed"); };
+  el.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    el.classList.add("pressed");
+    fire();
+    delay = setTimeout(() => { repeat = setInterval(fire, 180); }, 450);
+  });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) el.addEventListener(ev, stop);
+  el.addEventListener("click", (e) => { if (e.detail === 0) fire(); });
+  el.addEventListener("contextmenu", (e) => e.preventDefault());
 }
-$("#power-off").onclick =() => act("/api/tv/power", { on: false });
 
+for (const b of document.querySelectorAll("[data-key]")) holdable(b, () => pressKey(b.dataset.key));
+holdable($("#vol-up"), () => nudgeVolume(1));
+holdable($("#vol-down"), () => nudgeVolume(-1));
+
+$("#mute").onclick = () => act("/api/tv/mute", { mute: !state.tv.muted });
+$("#power-off").onclick = async () => {
+  try { await api("/api/tv/power", { on: false }); toast("TV off"); } catch (e) { fail(e); }
+  setTimeout(refreshTV, 1500);
+};
 $("#power-on").onclick = async () => {
   const btn = $("#power-on");
   btn.disabled = true;
-  $("#off-hint").textContent = "Turning on…";
+  btn.querySelector("span").textContent = "Turning on…";
   try {
     await api("/api/tv/power", { on: true });
-    // The TV takes a few seconds to boot its network.
-    for (let i = 0; i < 10 && !(tv && tv.on); i++) {
+    // The TV takes a few seconds to wake its network.
+    for (let i = 0; i < 10 && !(state.tv && state.tv.on); i++) {
       await new Promise((r) => setTimeout(r, 2000));
-      await refresh();
+      await refreshTV();
     }
-    if (!tv.on) notify('The TV did not answer. Check "Turn on via Wi-Fi" in its settings.');
-  } catch (e) {
-    if (e.message !== "login") notify(e.message);
-  }
+    if (!state.tv || !state.tv.on) toast('The TV didn\'t answer. Check "Turn on via Wi-Fi" in its settings.');
+  } catch (e) { fail(e); }
   btn.disabled = false;
-  $("#off-hint").textContent = "The TV is off or unreachable.";
+  btn.querySelector("span").textContent = "Turn the TV on";
 };
 
+$("#keyboard").onclick = () => {
+  const form = $("#type-form");
+  form.hidden = !form.hidden;
+  $("#keyboard").setAttribute("aria-expanded", String(!form.hidden));
+  if (!form.hidden) $("#type-text").focus();
+};
 $("#type-form").onsubmit = async (e) => {
   e.preventDefault();
   const text = $("#type-text").value;
@@ -262,14 +520,69 @@ $("#type-form").onsubmit = async (e) => {
   try {
     await api("/api/tv/type", { text });
     $("#type-text").value = "";
-  } catch (err) {
-    if (err.message !== "login") notify(err.message);
-  }
+    toast("Sent to the TV");
+  } catch (err) { fail(err); }
 };
-$("#wifi-tv").onclick =() => act("/api/wifi/tv", {});
 
-document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
-api("/api/wifi").then((w) => { ssid = w.ssid; $("#ssid").textContent = ssid; }).catch(() => {}).finally(refresh);
+$("#wifi-tv").onclick = async () => {
+  try { await api("/api/wifi/tv", {}); toast("The Wi-Fi QR is on the TV"); } catch (e) { fail(e); }
+};
+
+async function loadDevices() {
+  $("#net-error").hidden = true;
+  try {
+    const list = await api("/api/devices");
+    $("#net-count").textContent = list.length === 1 ? "1 device online" : `${list.length} devices online`;
+    $("#devices").replaceChildren(...list.map((d) => {
+      const li = document.createElement("li");
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = d.name || d.ip;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = d.vendor ? `${d.ip}, ${d.vendor}` : d.ip;
+      li.append(name, meta);
+      return li;
+    }));
+  } catch (e) {
+    if (e instanceof LoggedOut) return;
+    $("#devices").replaceChildren();
+    $("#net-count").textContent = "Who's online";
+    $("#net-error").textContent = e.message;
+    $("#net-error").hidden = false;
+  }
+}
+$("#net-refresh").onclick = loadDevices;
+
+// A keyboard works like the remote on a computer.
+const keyMap = { ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT", Enter: "ENTER", Escape: "BACK", Backspace: "BACK", h: "HOME" };
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea, button") && e.key === "Enter") return;
+  if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!state.tv || !state.tv.on) return;
+  if (keyMap[e.key]) {
+    e.preventDefault();
+    const btn = document.querySelector(`[data-key="${keyMap[e.key]}"]`);
+    if (btn) { btn.classList.add("pressed"); setTimeout(() => btn.classList.remove("pressed"), 120); }
+    pressKey(keyMap[e.key]);
+  } else if (e.key === "+" || e.key === "=") nudgeVolume(1);
+  else if (e.key === "-") nudgeVolume(-1);
+  else if (e.key === "m") $("#mute").click();
+});
+
+for (const b of document.querySelectorAll("nav button")) b.onclick = () => setTab(b.dataset.tab);
+
+let saved = null;
+try { saved = localStorage.getItem("tab"); } catch (e) {}
+setTab(["remote", "wifi", "network"].includes(location.hash.slice(1)) ? location.hash.slice(1) : saved || "remote");
+
+loadHome().then(refreshTV);
+if (wide.matches) loadDevices();
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden) loadHome().then(refreshTV); });
+setInterval(() => {
+  if (!document.hidden && (state.tab === "remote" || wide.matches)) refreshTV();
+}, 10000);
 </script>
 </body>
 </html>

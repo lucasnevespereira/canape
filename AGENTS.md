@@ -23,6 +23,7 @@ Supported today: LG webOS TVs, Freebox routers. Protocol notes live in `docs/` (
 - **Fixed Wi-Fi QR, never router writes.** canape reads the SSID from the router, the user types the password once, it lives only in `state.json`. Generating Freebox guest keys would need the "settings" permission, which can change any router setting. The user chose not to grant it.
 - **Stdlib first.** Dependencies only where the stdlib has nothing: `coder/websocket` (for LG, because it sends no `Origin` header and LG TVs reject one), `rsc.io/qr`, `x/net/dns/dnsmessage` (mDNS), the MCP go-sdk. Each new one needs a reason.
 - **One binary, page embedded.** No frontend build. `internal/wifi/page.html` uses old CSS only: webOS 4's browser is an old Chromium (no `min()`, no flex `gap`).
+- **Dashboard layout.** Three panels: Remote, Wi-Fi, Network. Tabs at the bottom on a phone, side by side from 960px. Palette is green velvet and brass (`internal/server/index.html` tokens), the system rounded font, and the dial as the one bold element. Apps show letter tiles: LG's icon URLs return 404 even while connected.
 - **Dashboard login by link.** `canape serve` prints a URL with a random key, and the same URL as a terminal QR code to scan with a phone. Opening it once moves the key into an HttpOnly, SameSite=Strict cookie. `/wifi` is public: the TV's browser has no cookie, and anyone who can reach it is already on the Wi-Fi.
 
 ## Layout

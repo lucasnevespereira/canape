@@ -72,7 +72,11 @@ One TV setting matters: on LG, turn on **"Turn on via Wi-Fi"**, or canape can tu
 canape serve
 ```
 
-canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices. On iPhone, Share → Add to Home Screen makes it feel like an app.
+canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices.
+
+On a phone, three tabs sit at the bottom: **Remote** (power, volume, arrows and OK, Home, Back, typing, inputs, apps), **Wi-Fi** (the QR for your guests, and "Show on the TV") and **Network** (who's online). On a computer, all three show side by side, and the keyboard works like the remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute.
+
+To use it like an app, add it to your home screen (Share → Add to Home Screen on iPhone). It opens full screen with its own icon.
 
 The dashboard only runs while `canape serve` does. Most things work without it: `canape wifi tv` puts the Wi-Fi QR on the TV in one command.
 

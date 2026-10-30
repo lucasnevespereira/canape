@@ -58,14 +58,10 @@ func Run(addr string) error {
 	// anyone who can reach this server is already on the Wi-Fi.
 	mux.HandleFunc("GET /wifi", wifiPage)
 	mux.HandleFunc("GET /wifi.svg", wifiSVG)
-	mux.HandleFunc("GET /api/wifi", sv.auth(func(w http.ResponseWriter, r *http.Request) {
-		h, err := home.Load()
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
-		writeJSON(w, map[string]string{"ssid": h.Wifi.SSID})
-	}))
+	mux.HandleFunc("GET /manifest.webmanifest", sv.manifest)
+	mux.HandleFunc("GET /icons/{file}", icon)
+	mux.HandleFunc("GET /api/home", sv.auth(homeInfo))
+	mux.HandleFunc("GET /api/devices", sv.auth(devices))
 	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(t tv.TV, _ struct{}) error {
 		return t.Open(sv.baseURL + "/wifi")
 	})))
@@ -163,6 +159,72 @@ func wifiSVG(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
 	w.Header().Set("Cache-Control", "no-store")
 	io.WriteString(w, svg)
+}
+
+// homeInfo is what the dashboard needs to draw its tabs: which home this
+// is, what's paired, and the Wi-Fi to share. It re-reads the state file, so
+// `canape setup` and `canape wifi set` show up without a restart.
+func homeInfo(w http.ResponseWriter, r *http.Request) {
+	h, err := home.Load()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, map[string]any{
+		"name":     h.Name,
+		"tv":       h.TV.Key != "",
+		"tvBrand":  home.BrandName(h.TV.Brand),
+		"router":   h.Freebox.AppToken != "",
+		"ssid":     h.Wifi.SSID,
+		"password": h.Wifi.Password, // already public on /wifi, for guests
+	})
+}
+
+func devices(w http.ResponseWriter, r *http.Request) {
+	h, err := home.Load()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	hosts, err := h.Devices(false)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	type device struct {
+		Name   string `json:"name"`
+		IP     string `json:"ip"`
+		Vendor string `json:"vendor"`
+	}
+	list := []device{}
+	for _, d := range hosts {
+		list = append(list, device{d.Name, d.IPv4(), d.Vendor})
+	}
+	writeJSON(w, list)
+}
+
+// manifest makes "Add to Home Screen" open canape full screen with its icon.
+// For a logged-in browser, start_url carries the login key: on iPhone a
+// home-screen app may not share Safari's cookies, so it logs itself in on
+// first launch instead of being stuck logged out.
+func (sv *server) manifest(w http.ResponseWriter, r *http.Request) {
+	start := "/"
+	if c, err := r.Cookie("canape"); err == nil && sv.validKey(c.Value) {
+		start = "/?key=" + c.Value
+	}
+	w.Header().Set("Content-Type", "application/manifest+json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"name":             "canape",
+		"short_name":       "canape",
+		"start_url":        start,
+		"display":          "standalone",
+		"background_color": "#142a24",
+		"theme_color":      "#142a24",
+		"icons": []map[string]string{
+			{"src": "/icons/192.png", "sizes": "192x192", "type": "image/png"},
+			{"src": "/icons/512.png", "sizes": "512x512", "type": "image/png"},
+		},
+	})
 }
 
 func (sv *server) validKey(k string) bool {
