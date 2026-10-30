@@ -1,14 +1,17 @@
 # canape
 
-A zero-setup remote for the network you're on: the TV, the Wi-Fi and the devices, from the terminal, a phone or Claude. One Go binary. It runs on a laptop or a Pi on the same LAN as the devices. Open source, MIT.
+A helper for any Wi-Fi you join: it tells a non-expert what's on the network and how good it is, and controls the devices there (TVs, the computer it runs on), from the terminal, a phone or Claude. One Go binary on a laptop or a Pi. Open source, MIT.
 
 ## Direction
 
-Tagline: *Control the TV and share the Wi-Fi on any network. No hub, one command, works with Claude.*
+Tagline: *Join any Wi-Fi, understand it, and control what's on it.*
 
-Who it's for: someone who has never heard of an IP address. Plain words, every problem with its next step, no terminal for everyday use, safe by default. The principles are at the top of ROADMAP.md.
+The picture: you arrive at a family member's house, join their Wi-Fi, type `canape`, and within seconds you know the network (Wi-Fi quality, the box, whether the internet works, every device in plain words) and can control what's there.
 
-What sets canape apart, in the order users care: no hub and one command (`canape setup`), three ways to use it (terminal, phone, Claude), and it works in any home you walk into.
+Who it's for: someone who has never heard of an IP address. Plain words, every problem with its next step, no terminal for everyday use, read-only on the router. The principles are at the top of ROADMAP.md.
+
+- **Works without the router.** On someone else's network canape has no router access, so the core uses only what this machine can see: its own Wi-Fi connection, what devices announce, their makers, an internet check. Router access (Freebox today) adds extras, never a requirement.
+- **Zero friction from canape.** No confirmations, no extra steps of its own. When a device demands its own approval (the LG pairing prompt), canape asks once and remembers it forever, in every home. Prefer what's automatic: devices that need no pairing (Chromecast, Roku, Sonos), the Wi-Fi password from the Keychain instead of typing it.
 
 **The filter for every feature:** it belongs in canape if it works in one command on a network canape just joined, without a server that has to run all the time. The dashboard is fine because it's optional.
 

@@ -1,12 +1,12 @@
 # canape
 
-**Control the TV and share the Wi-Fi on any network. No hub, one command, works with Claude.**
+**Join any Wi-Fi, understand it, and control what's on it.**
 
-canape is a zero-setup remote for the network you're on. Run `canape setup` on a laptop or a Raspberry Pi: it finds the TV and the router, pairs with them, and keeps the Wi-Fi ready to share as a QR code. Then use it from the terminal, your phone or Claude.
+canape is a helper for the network you're on. Join a Wi-Fi, at home or at your family's, type `canape`, and it tells you in plain words what you'd never find out alone: how good the Wi-Fi is, which box runs it, whether the internet works, and what every device on it is. Then it controls what's there: the TV, the computer you're on, sharing the Wi-Fi with a QR code. From the terminal, your phone or Claude.
 
-There's no hub to install and nothing to keep running, and it works the same in any home you walk into: yours, your family's, a rental.
+No hub to install, nothing to keep running, no network knowledge needed.
 
-> Early project. Works today with LG webOS TVs and Freebox routers. Samsung and Sony TVs are next, see [supported devices](#supported-devices).
+> Early project. Works today with LG webOS TVs, macOS computers and Freebox routers. The network report for any Wi-Fi is next, see the [roadmap](ROADMAP.md).
 
 ## Quick start
 

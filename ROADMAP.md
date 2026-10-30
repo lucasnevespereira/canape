@@ -35,9 +35,12 @@ Someone who has never heard of an IP address should be able to use canape. That 
 
 ## Next
 
+- **The network report.** Bare `canape` on any network, even without router access: the Wi-Fi (name, band, signal, security), the box, whether the internet works, and every device grouped by kind in plain words, ending with what you can do there ("press Enter to pair the LG TV"). The heart of canape.
 - **`canape check`: is it the internet or the Wi-Fi?** The question everyone asks. Checks the router, the internet and name lookups (DNS), then answers in one sentence with what to do. Also in the dashboard as a big "Check my connection" button.
+- **No typing the Wi-Fi password.** Read it from the Mac's Keychain for the network you're on, after one macOS prompt.
 - **Setup from the phone.** Pair the TV and the router, save the Wi-Fi, all from the dashboard. Today it needs `canape setup` in a terminal, which loses most people.
 - **French.** The dashboard and the CLI in French, picked from the phone's or the computer's language.
+- **Devices that need no pairing first:** Chromecast, Roku, Sonos. Zero friction at anyone's house.
 - **More TVs.** Samsung (Tizen) and Sony Bravia, each built in front of a real TV. `canape scan` already recognizes them.
 - **Android TV**, through ADB or the Android TV remote protocol. Covers projectors like XGIMI and the Freebox Player.
 - **Run in the background.** `canape serve` as a service (launchd on macOS, systemd on Linux and Pi), so the dashboard is always there.
