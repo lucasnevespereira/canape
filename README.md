@@ -175,6 +175,21 @@ On any machine on the same network as the TV: a Mac, a Linux box, a Raspberry Pi
 
 Everything stays in one file: `~/.canape/state.json`, on every system. It holds the pairing keys and the Wi-Fi passwords, so canape writes it readable by you only. Nothing is sent anywhere else. To start over, delete `~/.canape`.
 
+## Uninstall
+
+Remove the program the way you installed it, then its data:
+
+```bash
+brew uninstall canape                # Homebrew
+sudo rm /usr/local/bin/canape        # install.sh
+rm "$(go env GOPATH)/bin/canape"     # go install
+
+rm -rf ~/.canape                     # homes, pairing keys, Wi-Fi passwords
+claude mcp remove canape             # if you added it to Claude
+```
+
+The Freebox still lists canape as an app with access: remove it in Freebox OS, under Gestion des accès, then Applications. The LG TV remembers canape too, which is harmless.
+
 ## More
 
 - [docs/lg.md](docs/lg.md): LG setup, fewer ads on the home screen, a Wi-Fi app for the TV, how canape talks to the TV
