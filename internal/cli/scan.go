@@ -58,7 +58,7 @@ func scan() error {
 		}
 		switch d.Kind() {
 		case "LG webOS TV":
-			line("canape", "pair it with: canape tv pair")
+			line("canape", "supported. Pair it with: canape setup")
 		case "Samsung TV", "Sony TV":
 			line("canape", "not supported yet. Help add it: docs/adding-a-tv.md")
 		}
@@ -70,7 +70,7 @@ func scan() error {
 			fmt.Printf("  %-15s %-17s  %s\n", d.IP, d.MAC, d.Host)
 		}
 	}
-	fmt.Println()
+	fmt.Println("\nscan only looks. To pair what canape supports here: canape setup")
 	return nil
 }
 

@@ -26,6 +26,17 @@ canape serve             # phone dashboard
 
 `canape help` lists everything.
 
+### Looking around vs setting up
+
+| Command | What it does | Saves |
+|---|---|---|
+| `canape scan` | Lists every device on the network: TVs, phones, the router, cameras. Use it to look around, or to report a TV canape doesn't support yet. | Nothing |
+| `canape setup` | Pairs the TV and router it finds, and saves the Wi-Fi to share. | This network's home |
+| `canape devices` | Who's online right now, from the router's own list (Freebox only). | Nothing |
+| `canape` | What's set up on this network, and what to do next. | Nothing |
+
+On a new network, start with `canape setup`. Run `canape scan` when you're curious, or when setup finds no TV it knows.
+
 ## What it does
 
 - **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins.

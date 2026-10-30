@@ -16,7 +16,7 @@ import (
 const usage = `canape controls the TV and shares the Wi-Fi, from the couch or from Claude.
 
 Get started
-  canape setup                 set up this network: pair the TV and router, save the Wi-Fi
+  canape setup                 pair this network's TV and router, save the Wi-Fi (safe to rerun)
   canape                       what's set up here, and what to do next
 
 TV
@@ -36,8 +36,8 @@ Wi-Fi
   canape wifi set              change the saved Wi-Fi name or password
 
 Network
-  canape scan                  every device on this network
-  canape devices [all]         who's online, from the router (all: also who was)
+  canape scan                  look around: every device on this network (saves nothing)
+  canape devices [all]         who's online, from the router's own list (Freebox)
   canape homes                 saved homes, one per network · rename <name> · forget <name>
 
 Run
