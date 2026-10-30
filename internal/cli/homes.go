@@ -25,10 +25,8 @@ func homesCommand(args []string) error {
 			return errors.New("usage: canape homes rename <name>")
 		}
 		name := strings.Join(args[1:], " ")
-		for key, other := range h.State.Homes {
-			if other.Name == name && key != h.Router {
-				return fmt.Errorf("another home is already called %q", name)
-			}
+		if nameTaken(h, name) {
+			return fmt.Errorf("another home is already called %q", name)
 		}
 		h.Name = name
 		if err := h.Save(); err != nil {
@@ -69,7 +67,7 @@ func listHomes(h *home.Here) error {
 	}
 	sort.Slice(keys, func(i, j int) bool { return h.State.Homes[keys[i]].Name < h.State.Homes[keys[j]].Name })
 	if !h.Saved {
-		fmt.Printf("  → this network (router %s) isn't set up yet. Pair something: canape tv pair\n\n", h.Router)
+		fmt.Printf("  → this network (router %s) isn't set up yet. Run: canape setup\n\n", h.Router)
 	}
 	if len(keys) == 0 {
 		fmt.Println("  No homes saved yet.")

@@ -85,10 +85,10 @@ func Run(addr string) error {
 	}) error {
 		return t.SwitchInput(r.ID)
 	})))
-	mux.HandleFunc("POST /api/tv/button", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
-		Name string `json:"name"`
+	mux.HandleFunc("POST /api/tv/key", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
+		Key string `json:"key"`
 	}) error {
-		return t.Key(strings.ToUpper(r.Name))
+		return t.Key(strings.ToUpper(r.Key))
 	})))
 	mux.HandleFunc("POST /api/tv/type", sv.auth(tvHandler(sv, func(t tv.TV, r struct {
 		Text string `json:"text"`

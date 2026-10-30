@@ -33,3 +33,11 @@ var drivers = map[string]driver{
 		},
 	},
 }
+
+// BrandName is how a saved brand reads to the user, e.g. "LG webOS".
+func BrandName(brand string) string {
+	if d, ok := drivers[brand]; ok {
+		return d.name
+	}
+	return brand
+}

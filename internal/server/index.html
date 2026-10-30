@@ -232,7 +232,7 @@ $("#vol-up").onclick = () => changeVolume(1);
 $("#vol-down").onclick = () => changeVolume(-1);
 $("#mute").onclick = () => act("/api/tv/mute", { mute: !tv.muted });
 for (const b of document.querySelectorAll("[data-key]")) {
-  b.onclick = () => act("/api/tv/button", { name: b.dataset.key });
+  b.onclick = () => act("/api/tv/key", { key: b.dataset.key });
 }
 $("#power-off").onclick =() => act("/api/tv/power", { on: false });
 

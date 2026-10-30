@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,22 @@ func tvCommand(cmd string, args []string) error {
 		}
 		fmt.Println(`Wake-on-LAN sent. If the TV stays off, enable "Turn on via Wi-Fi" in its settings.`)
 		return nil
+	case "status":
+		if s.TV.Key == "" {
+			return errors.New("no TV paired on this network. Run: canape setup")
+		}
+		t, err := s.ConnectTV()
+		if err != nil {
+			fmt.Printf("%s at %s: off or unreachable. Turn it on with: canape tv on\n", home.BrandName(s.TV.Brand), s.TV.IP)
+			return nil
+		}
+		defer t.Close()
+		v, err := t.Volume()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s at %s: on%s, volume %d%s\n", home.BrandName(s.TV.Brand), s.TV.IP, nowShowing(t), v.Level, map[bool]string{true: " (muted)"}[v.Muted])
+		return nil
 	}
 
 	t, err := s.ConnectTV()
@@ -42,11 +59,6 @@ func tvCommand(cmd string, args []string) error {
 	defer t.Close()
 
 	switch cmd {
-	case "toast":
-		if len(args) == 0 {
-			return errors.New(`usage: canape tv toast "message"`)
-		}
-		err = t.Notify(strings.Join(args, " "))
 	case "off":
 		err = t.TurnOff()
 		if err == nil {
@@ -65,11 +77,36 @@ func tvCommand(cmd string, args []string) error {
 			return errors.New("volume must be a number from 0 to 100")
 		}
 		err = t.SetVolume(n)
-	case "button":
-		if len(args) == 0 {
-			return errors.New("usage: canape tv button <home|back|up|down|left|right|enter>")
+	case "mute":
+		var mute bool
+		switch {
+		case len(args) == 0: // toggle
+			v, err := t.Volume()
+			if err != nil {
+				return err
+			}
+			mute = !v.Muted
+		case args[0] == "on":
+			mute = true
+		case args[0] == "off":
+		default:
+			return errors.New("usage: canape tv mute [on|off]")
 		}
-		err = t.Key(strings.ToUpper(args[0]))
+		if err = t.SetMute(mute); err == nil {
+			fmt.Println(map[bool]string{true: "Muted.", false: "Unmuted."}[mute])
+		}
+	case "key":
+		if len(args) == 0 {
+			return errors.New("usage: canape tv key <home|back|up|down|left|right|ok>")
+		}
+		key := strings.ToUpper(args[0])
+		if key == "OK" {
+			key = tv.KeyOK
+		}
+		if !slices.Contains(tv.Keys, key) {
+			return fmt.Errorf("unknown key %q. Keys: home, back, up, down, left, right, ok", args[0])
+		}
+		err = t.Key(key)
 	case "type":
 		text := strings.Join(args, " ")
 		if text == "" {
@@ -77,6 +114,11 @@ func tvCommand(cmd string, args []string) error {
 			text = prompt(bufio.NewReader(os.Stdin), "Text to type on the TV", "")
 		}
 		err = t.Type(text)
+	case "notify":
+		if len(args) == 0 {
+			return errors.New(`usage: canape tv notify "message"`)
+		}
+		err = t.Notify(strings.Join(args, " "))
 	case "input":
 		err = tvInput(t, args)
 	case "app":
@@ -102,9 +144,35 @@ func tvCommand(cmd string, args []string) error {
 		}
 		return printCall(lt, args[0], payload)
 	default:
-		return fmt.Errorf("unknown command %q. Run canape without arguments for help", cmd)
+		return fmt.Errorf("unknown command %q. Run: canape help", "tv "+cmd)
+	}
+	if errors.Is(err, tv.ErrUnsupported) {
+		return fmt.Errorf("%s TVs can't do %q", home.BrandName(s.TV.Brand), cmd)
 	}
 	return err
+}
+
+// nowShowing names what's on screen, e.g. ", showing Apple", or "" if unknown.
+func nowShowing(t tv.TV) string {
+	id, err := t.Current()
+	if err != nil || id == "" {
+		return ""
+	}
+	if inputs, err := t.Inputs(); err == nil {
+		for _, in := range inputs {
+			if in.ID == id {
+				return ", showing " + in.Label
+			}
+		}
+	}
+	if apps, err := t.Apps(); err == nil {
+		for _, a := range apps {
+			if a.ID == id {
+				return ", showing " + a.Title
+			}
+		}
+	}
+	return ", showing " + id
 }
 
 func tvInput(t tv.TV, args []string) error {
@@ -163,7 +231,7 @@ func tvApp(t tv.TV, args []string) error {
 	if err := t.Launch(c.ID); err != nil {
 		return err
 	}
-	fmt.Println("Launched", c.Label)
+	fmt.Println("Opened", c.Label)
 	return nil
 }
 
@@ -184,7 +252,7 @@ func pair(s *home.Here) error {
 		fmt.Println(`Couldn't read the TV's MAC address, so "canape tv on" won't work. Add it to the file by hand.`)
 	}
 	t.Notify("canape is paired")
-	fmt.Println(`Try: canape tv toast "hello from the couch"`)
+	fmt.Println(`Try: canape tv notify "hello from the couch"`)
 	return nil
 }
 

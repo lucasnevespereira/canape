@@ -7,67 +7,95 @@ import (
 	"os"
 	"strings"
 
+	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/mcp"
 	"github.com/lucasnevespereira/canape/internal/server"
 	"github.com/lucasnevespereira/canape/internal/store"
 )
 
-const usage = `canape controls your TV from the couch.
+const usage = `canape controls the TV and shares the Wi-Fi, from the couch or from Claude.
 
-  canape serve [addr]          run the dashboard (default :8080)
-  canape mcp                   MCP server over stdio, for Claude and other MCP clients
-  canape scan                  list the devices on this network
-  canape homes                 saved homes (one per network) · rename <name> · forget <name>
+Get started
+  canape setup                 set up this network: pair the TV and router, save the Wi-Fi
+  canape                       what's set up here, and what to do next
 
-  canape tv pair               find the TV and pair (accept the prompt on screen)
-  canape tv toast <message>    show a notification on the TV
-  canape tv off                turn the TV off
-  canape tv on                 turn the TV on (Wake-on-LAN)
+TV
+  canape tv on | off | status
   canape tv volume [0-100]     show or set the volume
+  canape tv mute [on|off]      toggle mute, or set it
   canape tv input [name]       list inputs, or switch to one (e.g. hdmi1, apple)
-  canape tv app [name]         list apps, or launch one (e.g. youtube)
+  canape tv app [name]         list apps, or open one (e.g. youtube)
   canape tv open <url>         open a web page on the TV
-  canape tv button <key>       press a remote key: home, back, up, down, left, right, enter
-  canape tv type [text]        type into the focused text field (prompts if no text)
-  canape tv install-app        install a Wi-Fi QR app on the TV (needs Developer Mode)
-  canape tv call <uri> [json]  send any SSAP request and print the reply,
-                               e.g. canape tv call audio/getVolume
+  canape tv key <key>          press home, back, up, down, left, right or ok
+  canape tv type [text]        type into the selected text field (asks if no text)
+  canape tv notify <message>   show a message on the TV
 
-  canape wifi set              save the Wi-Fi name and password (name comes from the Freebox)
-  canape wifi                  show the Wi-Fi QR code in the terminal
-  canape wifi tv               show the Wi-Fi QR on the TV (no server needed)
+Wi-Fi
+  canape wifi                  the Wi-Fi QR code, in the terminal
+  canape wifi tv               the Wi-Fi QR code, on the TV
+  canape wifi set              change the saved Wi-Fi name or password
 
-  canape freebox pair          authorize canape on the Freebox (confirm on its screen)
-  canape freebox devices [all] devices online now, or every device seen
+Network
+  canape scan                  every device on this network
+  canape devices [all]         who's online, from the router (all: also who was)
+  canape homes                 saved homes, one per network · rename <name> · forget <name>
 
-State is kept in %s (set CANAPE_DATA to move it).
+Run
+  canape serve [addr]          phone dashboard (default :8080)
+  canape mcp                   MCP server for Claude: claude mcp add canape -- canape mcp
+
+Advanced
+  canape tv pair               pair a TV again (setup does it the first time)
+  canape freebox pair          pair the Freebox again
+  canape tv install-app        install a Wi-Fi QR app on an LG TV (needs Developer Mode)
+  canape tv call <uri> [json]  raw LG request, e.g. canape tv call audio/getVolume
+
+State: %s
 `
 
 // Run runs one command and returns the process exit code.
 func Run(args []string) int {
+	cmd, rest := "", []string(nil)
+	if len(args) > 0 {
+		cmd, rest = args[0], args[1:]
+	}
 	var err error
-	switch {
-	case len(args) >= 1 && args[0] == "serve":
+	switch cmd {
+	case "":
+		err = status()
+	case "help", "-h", "--help":
+		fmt.Printf(usage, store.Path())
+	case "setup":
+		err = setup()
+	case "tv":
+		if len(rest) == 0 {
+			rest = []string{"status"}
+		}
+		err = tvCommand(rest[0], rest[1:])
+	case "wifi":
+		err = wifiCommand(rest)
+	case "scan":
+		err = scan()
+	case "devices":
+		err = devices(len(rest) > 0 && rest[0] == "all")
+	case "homes":
+		err = homesCommand(rest)
+	case "serve":
 		addr := ":8080"
-		if len(args) > 1 {
-			addr = args[1]
+		if len(rest) > 0 {
+			addr = rest[0]
 		}
 		err = server.Run(addr)
-	case len(args) >= 1 && args[0] == "mcp":
+	case "mcp":
 		err = mcp.Run()
-	case len(args) >= 1 && args[0] == "scan":
-		err = scan()
-	case len(args) >= 1 && args[0] == "homes":
-		err = homesCommand(args[1:])
-	case len(args) >= 2 && args[0] == "tv":
-		err = tvCommand(args[1], args[2:])
-	case len(args) >= 1 && args[0] == "wifi":
-		err = wifiCommand(args[1:])
-	case len(args) >= 2 && args[0] == "freebox":
-		err = freeboxCommand(args[1], args[2:])
+	case "freebox":
+		if len(rest) > 0 && rest[0] == "pair" {
+			err = freeboxPairCommand()
+		} else {
+			err = fmt.Errorf("unknown command. Did you mean: canape freebox pair, or canape devices?")
+		}
 	default:
-		fmt.Printf(usage, store.Path())
-		return 2
+		err = fmt.Errorf("unknown command %q. Run: canape help", cmd)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "canape:", err)
@@ -75,6 +103,53 @@ func Run(args []string) int {
 	}
 	return 0
 }
+
+// status is what bare `canape` prints: this network's home and what's next.
+func status() error {
+	h, err := home.Load()
+	if err != nil {
+		return err
+	}
+	if !h.Saved {
+		fmt.Printf("canape · new network (router %s)\n\nNothing set up here yet. Run: canape setup\n", h.Router)
+		return nil
+	}
+	fmt.Printf("canape · home %q (router %s)\n\n", h.Name, h.Router)
+
+	tvLine := "not paired"
+	if h.TV.Key != "" {
+		tvLine = fmt.Sprintf("%s at %s", home.BrandName(h.TV.Brand), h.TV.IP)
+		if t, err := h.ConnectTV(); err != nil {
+			tvLine += " · off or unreachable (canape tv on)"
+		} else {
+			tvLine += " · on" + nowShowing(t)
+			if v, err := t.Volume(); err == nil {
+				tvLine += fmt.Sprintf(", volume %d", v.Level)
+			}
+			t.Close()
+		}
+	}
+	row("TV", tvLine)
+	if h.Freebox.AppToken != "" {
+		row("Router", "Freebox, paired")
+	} else {
+		row("Router", "not paired")
+	}
+	if h.Wifi.SSID != "" {
+		row("Wi-Fi", h.Wifi.SSID+", QR ready (canape wifi tv)")
+	} else {
+		row("Wi-Fi", "not saved")
+	}
+
+	if h.TV.Key == "" || h.Wifi.SSID == "" {
+		fmt.Println("\nFinish with: canape setup")
+	} else {
+		fmt.Println("\nNext: canape serve for the phone dashboard, or canape help")
+	}
+	return nil
+}
+
+func row(label, value string) { fmt.Printf("  %-8s %s\n", label, value) }
 
 func prompt(in *bufio.Reader, label, def string) string {
 	if def != "" {
@@ -88,4 +163,10 @@ func prompt(in *bufio.Reader, label, def string) string {
 		return def
 	}
 	return line
+}
+
+// yes asks a yes/no question that defaults to yes.
+func yes(in *bufio.Reader, question string) bool {
+	a := strings.ToLower(strings.TrimSpace(prompt(in, question+" [Y/n]", "")))
+	return a == "" || a == "y" || a == "yes" || a == "o" || a == "oui"
 }

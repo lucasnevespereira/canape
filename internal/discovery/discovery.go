@@ -74,7 +74,7 @@ func Scan() (*Result, error) {
 		return nil, fmt.Errorf("no network connection")
 	}
 	s := &scanner{devices: map[string]*Device{}, localIP: local, subnet: local[:strings.LastIndex(local, ".")+1]}
-	res := &Result{LocalIP: local, Freebox: probeFreebox()}
+	res := &Result{LocalIP: local, Freebox: FindFreebox()}
 
 	var wg sync.WaitGroup
 	for _, f := range []func(){s.sweep, s.ssdp, s.mdns} {
@@ -102,7 +102,7 @@ func (s *scanner) get(ip string) *Device {
 	return d
 }
 
-func probeFreebox() *Freebox {
+func FindFreebox() *Freebox {
 	c := http.Client{Timeout: 3 * time.Second}
 	resp, err := c.Get("http://mafreebox.freebox.fr/api_version")
 	if err != nil {

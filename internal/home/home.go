@@ -121,7 +121,7 @@ func (h *Here) PairTV(found func(brand, ip string), prompted func()) (tv.TV, err
 // TV forgot canape, it shows the accept prompt again and the new key is saved.
 func (h *Here) ConnectTV() (tv.TV, error) {
 	if h.TV.Key == "" {
-		return nil, fmt.Errorf("no TV paired on this network (%s). Run: canape tv pair", h.Name)
+		return nil, fmt.Errorf("no TV paired on this network (%s). Run: canape setup", h.Name)
 	}
 	d, ok := drivers[h.TV.Brand]
 	if !ok {
@@ -149,7 +149,7 @@ func (h *Here) ConnectTV() (tv.TV, error) {
 // WakeTV turns the TV on with Wake-on-LAN; a TV that's off can't be dialed.
 func (h *Here) WakeTV() error {
 	if h.TV.MAC == "" {
-		return fmt.Errorf("no TV paired on this network (%s). Run: canape tv pair (with the TV on)", h.Name)
+		return fmt.Errorf("no TV paired on this network (%s). Run: canape setup (with the TV on)", h.Name)
 	}
 	return tv.Wake(h.TV.MAC, h.TV.IP)
 }
@@ -182,7 +182,7 @@ func Status(t tv.TV) (TVStatus, error) {
 // Devices lists the hosts the router knows, online ones only unless all.
 func (h *Here) Devices(all bool) ([]freebox.Host, error) {
 	if h.Freebox.AppToken == "" {
-		return nil, errors.New("canape isn't paired with this network's router. On a Freebox, run: canape freebox pair")
+		return nil, errors.New("canape isn't paired with this network's router. Run: canape setup")
 	}
 	fbx, err := freebox.New(h.Freebox.AppToken)
 	if err != nil {

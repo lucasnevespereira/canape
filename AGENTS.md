@@ -83,7 +83,7 @@ Build one small step at a time. Each step should be easy to follow and explain o
 - [x] Homes: one per network (`canape homes`, rename, forget), automatic migration. Migrated the dev config; new-network flow checked with a simulated state.
 - [x] TV interface with LG as the first driver; Samsung/Sony detection in scan (rules from vendor identifiers, unverified on real TVs).
 - [ ] Samsung (Tizen WebSocket on 8001/8002, token pairing) and Sony (IP control with a pre-shared key) drivers, built in front of the real TVs.
-- [ ] CLI: `canape setup`, bare `canape` status, renames (`notify`, `key`, `canape devices`).
+- [x] CLI: `canape setup` (guided, re-runnable, only fills gaps), bare `canape` status, `canape help` grouped by task, renames (`tv notify`, `tv key`, `canape devices`), `tv status`, `tv mute`. Setup on an already set-up home checked (no changes); the new-network path still needs a real second network.
 - [ ] Docs: README quick start, docs/, CONTRIBUTING (adding a TV brand).
 - [x] MCP interface over the same functions. `canape mcp` with 12 tools (TV control, Wi-Fi on TV, network devices). Verified over stdio (tools/list, tv_status, network_devices); not yet used from Claude.
 - [x] Wi-Fi TV app: `canape tv install-app` wraps LG's ares CLI (`@webos-tools/cli`): registers the TV as `canape-tv` from the paired IP (port 9922, user prisoner), fetches the Dev Mode key once (ares stores it in `~/.ssh/canape-tv_webos`), packages, installs, launches. Installed and working on the dev TV. Installing over SSH without ares would drop the Node requirement.
