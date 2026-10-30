@@ -31,7 +31,13 @@ brew install lucasnevespereira/tools/canape
 canape setup
 ```
 
-No Homebrew? Download a binary for macOS, Linux or Raspberry Pi from [Releases](https://github.com/lucasnevespereira/canape/releases), or run `go install github.com/lucasnevespereira/canape@latest`.
+No Homebrew, or on a Raspberry Pi? This picks the right build, checks it and puts it in `/usr/local/bin`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lucasnevespereira/canape/main/install.sh | sh
+```
+
+Binaries are also on [Releases](https://github.com/lucasnevespereira/canape/releases), and Go users can run `go install github.com/lucasnevespereira/canape@latest`.
 
 `canape setup` looks for your TV and router, asks you to accept canape on the TV screen, and saves the Wi-Fi to share. Run it again anytime: it only fills in what's missing.
 
