@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv"
@@ -19,7 +20,7 @@ import (
 )
 
 func tvCommand(cmd string, args []string) error {
-	s, err := store.Load()
+	s, err := home.Load()
 	if err != nil {
 		return err
 	}
@@ -29,14 +30,14 @@ func tvCommand(cmd string, args []string) error {
 	case "install-app":
 		return installApp(s)
 	case "on":
-		if err := home.WakeTV(s); err != nil {
+		if err := s.WakeTV(); err != nil {
 			return err
 		}
 		fmt.Println(`Wake-on-LAN sent. If the TV stays off, enable "Turn on via Wi-Fi" in its settings.`)
 		return nil
 	}
 
-	t, err := home.ConnectTV(s)
+	t, err := s.ConnectTV()
 	if err != nil {
 		return err
 	}
@@ -164,7 +165,7 @@ func tvApp(t *lg.TV, args []string) error {
 	return nil
 }
 
-func pair(s *store.State) error {
+func pair(s *home.Here) error {
 	fmt.Print("Looking for an LG TV... ")
 	ip, err := lg.Discover(3 * time.Second)
 	if err != nil {
@@ -187,11 +188,11 @@ func pair(s *store.State) error {
 		return err
 	}
 
-	s.TV.IP, s.TV.Key, s.TV.MAC = ip, key, lg.MAC(ip)
+	s.TV = store.TV{Brand: "lg", IP: ip, MAC: discovery.MAC(ip), Key: key}
 	if err := s.Save(); err != nil {
 		return err
 	}
-	fmt.Println("Paired. Saved to", store.Path())
+	fmt.Printf("Paired. Saved in home %q (%s)\n", s.Name, store.Path())
 	if s.TV.MAC == "" {
 		fmt.Println(`Couldn't read the TV's MAC address, so "canape tv on" won't work. Add it to the file by hand.`)
 	}
@@ -203,7 +204,7 @@ func pair(s *store.State) error {
 // installApp builds the Wi-Fi QR app and installs it through LG's Developer
 // Mode. The QR is baked in, so it works with canape stopped; run it again
 // after changing the Wi-Fi password.
-func installApp(s *store.State) error {
+func installApp(s *home.Here) error {
 	if s.Wifi.SSID == "" {
 		return errors.New("no Wi-Fi saved yet. Run: canape wifi set")
 	}

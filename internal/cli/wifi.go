@@ -9,12 +9,11 @@ import (
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/router/freebox"
-	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 )
 
 func wifiCommand(args []string) error {
-	s, err := store.Load()
+	s, err := home.Load()
 	if err != nil {
 		return err
 	}
@@ -25,7 +24,7 @@ func wifiCommand(args []string) error {
 		return errors.New("no Wi-Fi saved yet. Run: canape wifi set")
 	}
 	if len(args) > 0 && args[0] == "tv" {
-		t, err := home.ConnectTV(s)
+		t, err := s.ConnectTV()
 		if err != nil {
 			return err
 		}
@@ -45,7 +44,7 @@ func wifiCommand(args []string) error {
 	return nil
 }
 
-func wifiSet(s *store.State) error {
+func wifiSet(s *home.Here) error {
 	ssid := s.Wifi.SSID
 	if ssid == "" && s.Freebox.AppToken != "" {
 		if fbx, err := freebox.New(s.Freebox.AppToken); err == nil {

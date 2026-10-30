@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os/exec"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -342,27 +340,4 @@ func Wake(mac, ip string) error {
 		return fmt.Errorf("send wake packet: %w", errors.Join(errs...))
 	}
 	return nil
-}
-
-var macRe = regexp.MustCompile(`([0-9a-fA-F]{1,2}:){5}[0-9a-fA-F]{1,2}`)
-
-// MAC reads a device's MAC from the ARP cache, which is warm right after
-// talking to it. Empty if not found.
-func MAC(ip string) string {
-	for _, cmd := range [][]string{{"arp", "-n", ip}, {"ip", "neigh", "show", ip}} {
-		out, err := exec.Command(cmd[0], cmd[1:]...).Output()
-		m := macRe.FindString(string(out))
-		if err != nil || m == "" {
-			continue
-		}
-		// macOS prints "aa:bb:cc:d:ee:ff" for "aa:bb:cc:0d:ee:ff".
-		parts := strings.Split(strings.ToLower(m), ":")
-		for i, p := range parts {
-			if len(p) == 1 {
-				parts[i] = "0" + p
-			}
-		}
-		return strings.Join(parts, ":")
-	}
-	return ""
 }

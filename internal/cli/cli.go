@@ -17,6 +17,7 @@ const usage = `canape controls your TV from the couch.
   canape serve [addr]          run the dashboard (default :8080)
   canape mcp                   MCP server over stdio, for Claude and other MCP clients
   canape scan                  list the devices on this network
+  canape homes                 saved homes (one per network) · rename <name> · forget <name>
 
   canape tv pair               find the TV and pair (accept the prompt on screen)
   canape tv toast <message>    show a notification on the TV
@@ -56,6 +57,8 @@ func Run(args []string) int {
 		err = mcp.Run()
 	case len(args) >= 1 && args[0] == "scan":
 		err = scan()
+	case len(args) >= 1 && args[0] == "homes":
+		err = homesCommand(args[1:])
 	case len(args) >= 2 && args[0] == "tv":
 		err = tvCommand(args[1], args[2:])
 	case len(args) >= 1 && args[0] == "wifi":

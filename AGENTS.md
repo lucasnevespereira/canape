@@ -9,6 +9,7 @@ It starts with two devices, an LG webOS TV and a Freebox router (Pop). Planned f
 - **Runs inside the home network, never on a VPS.** The LG API and Wake-on-LAN only work from the home network. Exposing the Freebox API to the internet would put router admin on the public internet. Remote access is Tailscale's job, not ours.
 - **One binary, web page embedded** with `embed`. No separate frontend build, no nginx. A plain HTML/JS page calls the binary's JSON API.
 - **Stdlib first.** `net/http` with Go 1.22+ method routing, `embed`, `encoding/json`, `crypto/hmac`. Add a dependency only where the stdlib has nothing: a WebSocket client (for the LG) and maybe QR generation. Each new dependency needs a reason.
+- **One home per network, keyed by the router's MAC.** canape works wherever you are: your home, your sister's. `home.Load()` reads the default gateway's MAC from the ARP table (no permission needed; recent macOS hides the Wi-Fi name from CLI tools) and returns that network's home. A new network gets an in-memory home that's only saved once something is paired, so read commands never add entries. Nothing ever overwrites another home. A pre-homes `state.json` migrates into a home named "home" on first run.
 - **Only the devices we have.** No plugin system or device interfaces until a second TV brand or router actually shows up.
 - **Login from day one.** Anyone on the Wi-Fi, guests included, can reach the dashboard. `canape serve` prints a link with a random key; opening it once moves the key into an HttpOnly, SameSite=Strict cookie. No password to type on a phone. Delete `dashboard.key` from the state file to log every device out.
 - **Docker is packaging, not the runtime.** It ships later as a thin wrapper around the binary and needs `network_mode: host` (for WoL broadcasts and discovery). On a Mac, develop with `go run .`, because Docker Desktop host networking is unreliable.
@@ -35,7 +36,7 @@ docs/                      longer notes (discovery.md)
 
 `page.html` is kept to old CSS on purpose: webOS 4's browser is an old Chromium (no min(), no flex gap).
 
-State lives in `state.json` inside `CANAPE_DATA`, or by default the OS user config dir (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), so the CLI works from any directory. Docker will set `CANAPE_DATA=/data`. The file holds the TV client-key, the dashboard login key, the Freebox app_token and the Wi-Fi name and password. Write it with mode 0600 and never log tokens.
+State lives in `state.json` inside `CANAPE_DATA`, or by default the OS user config dir (`~/Library/Application Support/canape` on macOS, `~/.config/canape` on Linux), so the CLI works from any directory. Docker will set `CANAPE_DATA=/data`. Shape: `{"homes": {"<router mac>": {name, tv: {brand, ip, mac, key}, wifi, freebox}}, "dashboard": {key}}`. It holds pairing keys and Wi-Fi passwords: write it with mode 0600 and never log tokens.
 
 **Under `canape mcp`, stdout is the protocol.** Code shared with the MCP tools must not print to stdout: return strings, or write to stderr.
 
@@ -78,7 +79,12 @@ Build one small step at a time. Each step should be easy to follow and explain o
 - [x] Freebox: authorize, session, list connected devices. Paired with the dev Pop; `settings` permission deliberately not granted.
 - [x] Wi-Fi QR: `canape wifi set`, terminal QR, public `/wifi` page, dashboard card with "Show on TV" (`system.launcher/open`). Scanned with a phone and shown on the dev TV.
 - [ ] Packaging: install script (systemd and launchd), Dockerfile, compose with host networking
-- [ ] MCP interface over the same functions. `canape mcp` with 12 tools (TV control, Wi-Fi on TV, network devices). Verified over stdio (tools/list, tv_status, network_devices); not yet used from Claude.
+- [x] Repo layout: `internal/` packages, `canape scan` replaces cmd/scan, MIT license, CI.
+- [x] Homes: one per network (`canape homes`, rename, forget), automatic migration. Migrated the dev config; new-network flow checked with a simulated state.
+- [ ] TV interface with LG as the first driver; Samsung/Sony detection in scan.
+- [ ] CLI: `canape setup`, bare `canape` status, renames (`notify`, `key`, `canape devices`).
+- [ ] Docs: README quick start, docs/, CONTRIBUTING (adding a TV brand).
+- [x] MCP interface over the same functions. `canape mcp` with 12 tools (TV control, Wi-Fi on TV, network devices). Verified over stdio (tools/list, tv_status, network_devices); not yet used from Claude.
 - [x] Wi-Fi TV app: `canape tv install-app` wraps LG's ares CLI (`@webos-tools/cli`): registers the TV as `canape-tv` from the paired IP (port 9922, user prisoner), fetches the Dev Mode key once (ares stores it in `~/.ssh/canape-tv_webos`), packages, installs, launches. Installed and working on the dev TV. Installing over SSH without ares would drop the Node requirement.
 - [x] `canape wifi tv`: opens the Wi-Fi page in the TV browser without `canape serve`. A throwaway server on a random port answers the TV's single request, then exits; the inline-SVG QR stays on screen. Preferred over the TV app, which is an optional offline extra (Dev Mode expires).
 - [x] Typing on the TV: `canape tv type` and a dashboard text field (`ime/insertText`), plus an OK key. Used to log into Developer Mode on the dev TV. Dev Mode sessions expire; auto-extending them is a possible follow-up.

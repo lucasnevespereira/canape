@@ -10,7 +10,6 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
-	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv"
 	"github.com/lucasnevespereira/canape/internal/tv/lg"
 	"github.com/lucasnevespereira/canape/internal/wifi"
@@ -38,11 +37,11 @@ func Run() error {
 		Description: "Whether the TV is on, its volume, what's on screen, and its inputs and apps. Call it to learn input and app names.",
 		Annotations: readOnly,
 	}, func(ctx context.Context, _ *sdk.CallToolRequest, _ struct{}) (*sdk.CallToolResult, home.TVStatus, error) {
-		s, err := store.Load()
+		s, err := home.Load()
 		if err != nil {
 			return nil, home.TVStatus{}, err
 		}
-		tv, err := home.ConnectTV(s)
+		tv, err := s.ConnectTV()
 		if err != nil {
 			return nil, home.TVStatus{}, nil // off or unreachable: on=false
 		}
@@ -56,11 +55,11 @@ func Run() error {
 			On bool `json:"on" jsonschema:"true to turn on, false to turn off"`
 		}) (*sdk.CallToolResult, reply, error) {
 			if in.On {
-				s, err := store.Load()
+				s, err := home.Load()
 				if err != nil {
 					return nil, reply{}, err
 				}
-				return nil, reply{"Wake-on-LAN sent. The TV takes a few seconds to start."}, home.WakeTV(s)
+				return nil, reply{"Wake-on-LAN sent. The TV takes a few seconds to start."}, s.WakeTV()
 			}
 			return withTV(func(t *lg.TV) (string, error) { return "TV off.", t.TurnOff() })
 		})
@@ -155,7 +154,7 @@ func Run() error {
 
 	sdk.AddTool(s, &sdk.Tool{Name: "wifi_show_on_tv", Description: "Show the home Wi-Fi QR code full screen on the TV so guests can scan it."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, _ struct{}) (*sdk.CallToolResult, reply, error) {
-			s, err := store.Load()
+			s, err := home.Load()
 			if err != nil {
 				return nil, reply{}, err
 			}
@@ -184,11 +183,11 @@ func Run() error {
 
 // withTV connects to the paired TV for one tool call.
 func withTV(fn func(*lg.TV) (string, error)) (*sdk.CallToolResult, reply, error) {
-	s, err := store.Load()
+	s, err := home.Load()
 	if err != nil {
 		return nil, reply{}, err
 	}
-	t, err := home.ConnectTV(s)
+	t, err := s.ConnectTV()
 	if err != nil {
 		return nil, reply{}, err
 	}
@@ -212,11 +211,11 @@ type devicesOutput struct {
 
 func networkDevices(all bool) (devicesOutput, error) {
 	var out devicesOutput
-	s, err := store.Load()
+	s, err := home.Load()
 	if err != nil {
 		return out, err
 	}
-	hosts, err := home.Devices(s, all)
+	hosts, err := s.Devices(all)
 	for _, h := range hosts {
 		out.Devices = append(out.Devices, netDevice{
 			Name: h.Name, IP: h.IPv4(), MAC: h.MAC(), Vendor: h.Vendor, Online: h.Reachable,

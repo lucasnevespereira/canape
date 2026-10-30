@@ -12,7 +12,7 @@ import (
 )
 
 func freeboxCommand(cmd string, args []string) error {
-	s, err := store.Load()
+	s, err := home.Load()
 	if err != nil {
 		return err
 	}
@@ -26,7 +26,7 @@ func freeboxCommand(cmd string, args []string) error {
 	}
 }
 
-func freeboxPair(s *store.State) error {
+func freeboxPair(s *home.Here) error {
 	device, _ := os.Hostname()
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
@@ -40,13 +40,13 @@ func freeboxPair(s *store.State) error {
 	if err := s.Save(); err != nil {
 		return err
 	}
-	fmt.Println("Paired. Saved to", store.Path())
+	fmt.Printf("Paired. Saved in home %q (%s)\n", s.Name, store.Path())
 	fmt.Println("Try: canape freebox devices")
 	return nil
 }
 
-func devices(s *store.State, all bool) error {
-	hosts, err := home.Devices(s, true)
+func devices(s *home.Here, all bool) error {
+	hosts, err := s.Devices(true)
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,6 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
-	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv/lg"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 )
@@ -31,25 +30,26 @@ type server struct {
 	// time and guards the state file, which ConnectTV may rewrite. Fine for a
 	// household; split it if requests ever queue up.
 	mu      sync.Mutex
-	state   *store.State
+	here    *home.Here
 	baseURL string // how the TV reaches this server
 }
 
 func Run(addr string) error {
-	s, err := store.Load()
+	h, err := home.Load()
 	if err != nil {
 		return err
 	}
-	if s.Dashboard.Key == "" {
+	// The login key covers every home, so it lives outside them.
+	if h.State.Dashboard.Key == "" {
 		b := make([]byte, 16)
 		rand.Read(b)
-		s.Dashboard.Key = hex.EncodeToString(b)
-		if err := s.Save(); err != nil {
+		h.State.Dashboard.Key = hex.EncodeToString(b)
+		if err := h.State.Save(); err != nil {
 			return err
 		}
 	}
 	port := addr[strings.LastIndex(addr, ":")+1:]
-	sv := &server{state: s, baseURL: "http://" + discovery.LocalIP() + ":" + port}
+	sv := &server{here: h, baseURL: "http://" + discovery.LocalIP() + ":" + port}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", sv.index)
@@ -58,12 +58,12 @@ func Run(addr string) error {
 	mux.HandleFunc("GET /wifi", wifiPage)
 	mux.HandleFunc("GET /wifi.svg", wifiSVG)
 	mux.HandleFunc("GET /api/wifi", sv.auth(func(w http.ResponseWriter, r *http.Request) {
-		s, err := store.Load()
+		h, err := home.Load()
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
-		writeJSON(w, map[string]string{"ssid": s.Wifi.SSID})
+		writeJSON(w, map[string]string{"ssid": h.Wifi.SSID})
 	}))
 	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(tv *lg.TV, _ struct{}) error {
 		return tv.Open(sv.baseURL + "/wifi")
@@ -101,7 +101,7 @@ func Run(addr string) error {
 		return tv.Launch(r.ID)
 	})))
 
-	fmt.Printf("canape is running. Open this link once on each of your devices (same Wi-Fi):\n\n  %s/?key=%s\n\n", sv.baseURL, s.Dashboard.Key)
+	fmt.Printf("canape is running for home %q. Open this link once on each of your devices (same Wi-Fi):\n\n  %s/?key=%s\n\n", h.Name, sv.baseURL, h.State.Dashboard.Key)
 	fmt.Println("It logs the device in, so only open it on your own. Ctrl+C to stop.")
 	return http.ListenAndServe(addr, mux)
 }
@@ -132,24 +132,24 @@ func (sv *server) index(w http.ResponseWriter, r *http.Request) {
 // The Wi-Fi handlers re-read the state file, so `canape wifi set` shows up
 // without restarting the server.
 func wifiPage(w http.ResponseWriter, r *http.Request) {
-	s, err := store.Load()
+	h, err := home.Load()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := wifi.Page(w, s.Wifi.SSID, s.Wifi.Password); err != nil {
+	if err := wifi.Page(w, h.Wifi.SSID, h.Wifi.Password); err != nil {
 		log.Print(err)
 	}
 }
 
 func wifiSVG(w http.ResponseWriter, r *http.Request) {
-	s, err := store.Load()
-	if err != nil || s.Wifi.SSID == "" {
+	h, err := home.Load()
+	if err != nil || h.Wifi.SSID == "" {
 		http.NotFound(w, r)
 		return
 	}
-	svg, err := wifi.SVG(wifi.QRText(s.Wifi.SSID, s.Wifi.Password))
+	svg, err := wifi.SVG(wifi.QRText(h.Wifi.SSID, h.Wifi.Password))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -160,7 +160,7 @@ func wifiSVG(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sv *server) validKey(k string) bool {
-	return subtle.ConstantTimeCompare([]byte(k), []byte(sv.state.Dashboard.Key)) == 1
+	return subtle.ConstantTimeCompare([]byte(k), []byte(sv.here.State.Dashboard.Key)) == 1
 }
 
 func (sv *server) auth(next http.HandlerFunc) http.HandlerFunc {
@@ -177,7 +177,7 @@ func (sv *server) auth(next http.HandlerFunc) http.HandlerFunc {
 func (sv *server) tvStatus(w http.ResponseWriter, r *http.Request) {
 	sv.mu.Lock()
 	defer sv.mu.Unlock()
-	tv, err := home.ConnectTV(sv.state)
+	tv, err := sv.here.ConnectTV()
 	if err != nil {
 		// Off and unreachable look the same from here. The page offers power on.
 		writeJSON(w, home.TVStatus{})
@@ -206,7 +206,7 @@ func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sv.mu.Lock()
-	err := home.WakeTV(sv.state)
+	err := sv.here.WakeTV()
 	sv.mu.Unlock()
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
@@ -226,7 +226,7 @@ func tvHandler[T any](sv *server, fn func(*lg.TV, T) error) http.HandlerFunc {
 		}
 		sv.mu.Lock()
 		defer sv.mu.Unlock()
-		tv, err := home.ConnectTV(sv.state)
+		tv, err := sv.here.ConnectTV()
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err)
 			return
