@@ -25,6 +25,10 @@ type Here struct {
 	Saved  bool // false for a network canape hasn't set up yet
 }
 
+// ErrUnknownNetwork means the router can't be identified, so there's no
+// home to load. What needs no home, like the network report, still works.
+var ErrUnknownNetwork = errors.New("can't tell which network this is")
+
 // Load finds the current network's home. A new network gets an empty home
 // that's only written once something is paired, so read-only commands
 // never add entries.
@@ -35,7 +39,7 @@ func Load() (*Here, error) {
 	}
 	_, mac, err := discovery.Router()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %v", ErrUnknownNetwork, err)
 	}
 	h, saved := st.Homes[mac], true
 	if st.Legacy != nil {
@@ -80,6 +84,9 @@ func (h *Here) Save() error {
 	return h.State.Save()
 }
 
+// ErrNoTV means no TV canape can drive answered: none, or it's off.
+var ErrNoTV = errors.New("no TV that canape can control answered")
+
 // PairTV looks for a TV on this network, asks it to accept canape and
 // saves it in this home. found is called before the TV shows its prompt.
 func (h *Here) PairTV(found func(brand, ip string), prompted func()) (tv.TV, error) {
@@ -105,7 +112,7 @@ func (h *Here) PairTV(found func(brand, ip string), prompted func()) (tv.TV, err
 		t, key, err := d.connect(ctx, ip, key, prompted)
 		cancel()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("pairing with the %s TV at %s failed: %w", d.name, ip, err)
 		}
 		h.TV = store.TV{Brand: brand, IP: ip, MAC: discovery.MAC(ip), Key: key}
 		if err := h.Save(); err != nil {
@@ -114,7 +121,7 @@ func (h *Here) PairTV(found func(brand, ip string), prompted func()) (tv.TV, err
 		}
 		return t, nil
 	}
-	return nil, fmt.Errorf("no supported TV answered (%w)", errors.Join(errs...))
+	return nil, fmt.Errorf("%w (%w)", ErrNoTV, errors.Join(errs...))
 }
 
 // ConnectTV dials the paired TV and authenticates with the saved key. If the
@@ -199,7 +206,7 @@ func Status(t tv.TV) (TVStatus, error) {
 // Devices lists the hosts the router knows, online ones only unless all.
 func (h *Here) Devices(all bool) ([]freebox.Host, error) {
 	if h.Freebox.AppToken == "" {
-		return nil, errors.New("canape isn't paired with this network's router. Run: canape setup")
+		return nil, errors.New("the router's device list needs a paired Freebox (canape setup pairs one). canape scan works on any network")
 	}
 	fbx, err := freebox.New(h.Freebox.AppToken)
 	if err != nil {

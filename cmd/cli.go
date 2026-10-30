@@ -4,6 +4,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/lucasnevespereira/canape/internal/version"
 )
 
-const usage = `canape controls the TV and shares the Wi-Fi, from the couch or from Claude.
+const usage = `canape explains the Wi-Fi you're on and controls what's on it: the TV, this computer.
 
 Get started
   canape setup                 pair this network's TV and router, save the Wi-Fi (safe to rerun)
@@ -128,7 +129,43 @@ func Run(args []string) int {
 
 func row(label, value string) { fmt.Printf("  %-9s %s\n", label, value) }
 
-func prompt(in *bufio.Reader, label, def string) string {
+// lineReader is a *bufio.Reader, or lines when a step must also be skippable.
+type lineReader interface {
+	ReadString(delim byte) (string, error)
+}
+
+// lines is stdin one line at a time, so a long wait can also listen for Enter.
+type lines chan string
+
+func stdinLines() lines { return readLines(os.Stdin) }
+
+func readLines(src io.Reader) lines {
+	ch := make(lines)
+	go func() {
+		r := bufio.NewReader(src)
+		for {
+			line, err := r.ReadString('\n')
+			if line != "" {
+				ch <- line
+			}
+			if err != nil {
+				close(ch)
+				return
+			}
+		}
+	}()
+	return ch
+}
+
+func (l lines) ReadString(byte) (string, error) {
+	line, ok := <-l
+	if !ok {
+		return "", io.EOF
+	}
+	return line, nil
+}
+
+func prompt(in lineReader, label, def string) string {
 	if def != "" {
 		fmt.Printf("%s [%s]: ", label, def)
 	} else {
@@ -140,10 +177,4 @@ func prompt(in *bufio.Reader, label, def string) string {
 		return def
 	}
 	return line
-}
-
-// yes asks a yes/no question that defaults to yes.
-func yes(in *bufio.Reader, question string) bool {
-	a := strings.ToLower(strings.TrimSpace(prompt(in, question+" [Y/n]", "")))
-	return a == "" || a == "y" || a == "yes" || a == "o" || a == "oui"
 }

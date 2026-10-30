@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"bufio"
+	"context"
+	"errors"
 	"fmt"
-	"os"
+	"time"
 
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
@@ -17,12 +18,12 @@ func setup() error {
 	if err != nil {
 		return err
 	}
-	in := bufio.NewReader(os.Stdin)
+	in := stdinLines()
 
 	if h.Saved {
-		fmt.Printf("Setting up %q (router %s).\n", h.Name, h.Router)
+		fmt.Printf("Setting up %q.\n", h.Name)
 	} else {
-		fmt.Printf("New network (router %s).\n", h.Router)
+		fmt.Println("A network canape doesn't know yet.")
 		for {
 			name := prompt(in, "Name this home", h.Name)
 			if !nameTaken(h, name) {
@@ -37,17 +38,13 @@ func setup() error {
 	if h.TV.Key != "" {
 		fmt.Printf("   %s at %s, already paired.\n", home.BrandName(h.TV.Brand), h.TV.IP)
 	} else {
-		fmt.Print("   Looking for a TV... ")
-		t, err := h.PairTV(func(brand, ip string) {
-			fmt.Printf("found %s at %s\n", brand, ip)
-		}, func() {
-			fmt.Println("   Accept the prompt on your TV (you have 60 seconds)...")
-		})
-		if err != nil {
-			fmt.Println("none that canape supports.")
-			otherTVs("   ")
-			fmt.Println("   Skipped. If your TV was off, turn it on and run canape setup again.")
-		} else {
+		t, err := pairTV(h, "   ")
+		switch {
+		case errors.Is(err, home.ErrNoTV):
+			fmt.Println("   Skipped. If your TV is off, turn it on and run canape setup again.")
+		case err != nil:
+			fmt.Printf("   %v\n   Skipped. Try again with: canape tv pair\n", err)
+		default:
 			t.Notify("canape is paired")
 			t.Close()
 			fmt.Println("   Paired.")
@@ -59,13 +56,23 @@ func setup() error {
 	case h.Freebox.AppToken != "":
 		fmt.Println("   Freebox, already paired.")
 	case f == nil:
-		fmt.Println("   Not a Freebox. Listing devices only works with a Freebox for now.")
-	case yes(in, fmt.Sprintf("   Found a Freebox %s. Pair it? You confirm on the box's screen", f.Nick)):
-		if err := freeboxPair(h); err != nil {
-			fmt.Printf("   %v\n   Skipped. Run canape freebox pair later.\n", err)
-		}
+		fmt.Println("   Not a Freebox, so nothing to pair. canape scan still finds every device.")
 	default:
-		fmt.Println("   Skipped.")
+		fmt.Printf("   Found a Freebox %s. Pairing it, press Enter to skip.\n", f.Nick)
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		done := make(chan error, 1)
+		go func() { done <- freeboxPair(ctx, h) }()
+		select {
+		case err = <-done:
+		case <-in:
+			cancel()
+			<-done
+			err = errors.New("skipped")
+		}
+		cancel()
+		if err != nil {
+			fmt.Printf("   Not paired (%v). Pair it later with: canape freebox pair\n", err)
+		}
 	}
 
 	fmt.Println("\n3. Wi-Fi to share")
