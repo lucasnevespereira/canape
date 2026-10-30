@@ -134,9 +134,6 @@ func (c *Client) login() error {
 	return nil
 }
 
-// Login opens a session right away, to check the token and read permissions.
-func (c *Client) Login() error { return c.login() }
-
 // do calls the API with a session, opening or renewing it as needed.
 func (c *Client) do(method, path string, body, out any) error {
 	if c.session == "" {

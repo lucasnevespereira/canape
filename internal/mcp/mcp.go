@@ -43,6 +43,9 @@ func Run() error {
 		if err != nil {
 			return nil, home.TVStatus{}, err
 		}
+		if s.TV.Key == "" {
+			return nil, home.TVStatus{}, errors.New("no TV is paired on this network. The user can pair one with: canape setup")
+		}
 		t, err := s.ConnectTV()
 		if err != nil {
 			return nil, home.TVStatus{}, nil // off or unreachable: on=false
