@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/lucasnevespereira/canape/internal/mcp"
-	"github.com/lucasnevespereira/canape/internal/server"
 	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/version"
 )
@@ -60,6 +59,7 @@ Network
 
 Run
   canape serve [addr]          web dashboard, made for your phone (default :8080)
+  canape serve -d | stop       run it in the background, or stop it
   canape mcp                   MCP server for Claude: claude mcp add canape -- canape mcp
   canape version               which canape this is
 
@@ -106,11 +106,7 @@ func Run(args []string) int {
 	case "homes":
 		err = homesCommand(rest)
 	case "serve":
-		addr := ":8080"
-		if len(rest) > 0 {
-			addr = rest[0]
-		}
-		err = server.Run(addr)
+		err = serveCommand(rest)
 	case "mcp":
 		err = mcp.Run()
 	case "freebox":

@@ -12,10 +12,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/lucasnevespereira/canape/internal/computer"
 	"github.com/lucasnevespereira/canape/internal/discovery"
@@ -37,10 +39,20 @@ type server struct {
 	baseURL string // how the TV reaches this server
 }
 
-func Run(addr string) error {
+// Link is the login link for a dashboard on addr, and the home it's for.
+// It makes the login key the first time.
+func Link(addr string) (homeName, link string, err error) {
+	h, sv, err := load(addr)
+	if err != nil {
+		return "", "", err
+	}
+	return h.Name, sv.baseURL + "/?key=" + sv.key, nil
+}
+
+func load(addr string) (*home.Here, *server, error) {
 	h, err := home.Load()
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 	// The login key covers every home, so it lives outside them.
 	if h.State.Dashboard.Key == "" {
@@ -48,11 +60,20 @@ func Run(addr string) error {
 		rand.Read(b)
 		h.State.Dashboard.Key = hex.EncodeToString(b)
 		if err := h.State.Save(); err != nil {
-			return err
+			return nil, nil, err
 		}
 	}
 	port := addr[strings.LastIndex(addr, ":")+1:]
-	sv := &server{key: h.State.Dashboard.Key, baseURL: "http://" + discovery.LocalIP() + ":" + port}
+	return h, &server{key: h.State.Dashboard.Key, baseURL: "http://" + discovery.LocalIP() + ":" + port}, nil
+}
+
+// Run serves the dashboard on addr. ready runs once it listens, with the
+// login link, so a taken port fails before anything is printed.
+func Run(addr string, ready func(homeName, link string)) error {
+	h, sv, err := load(addr)
+	if err != nil {
+		return err
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", sv.index)
@@ -103,14 +124,15 @@ func Run(addr string) error {
 		return t.Launch(r.ID)
 	})))
 
-	link := sv.baseURL + "/?key=" + h.State.Dashboard.Key
-	fmt.Printf("canape is running for home %q.\n\nScan with your phone to open the web dashboard:\n\n", h.Name)
-	if code, err := qrcode.Terminal(link); err == nil {
-		fmt.Print(code)
+	ln, err := net.Listen("tcp", addr)
+	if errors.Is(err, syscall.EADDRINUSE) {
+		return fmt.Errorf("port %s is taken, maybe by a canape serve already running. canape serve -d shows its link, canape serve stop stops it. Or pick another port: canape serve :8081", addr[strings.LastIndex(addr, ":")+1:])
 	}
-	fmt.Printf("\nOr open %s on a device on the same Wi-Fi.\n", link)
-	fmt.Println("The link logs the device in, so only use it on your own devices. Ctrl+C to stop.")
-	return http.ListenAndServe(addr, mux)
+	if err != nil {
+		return err
+	}
+	ready(h.Name, sv.baseURL+"/?key="+sv.key)
+	return http.Serve(ln, mux)
 }
 
 // index serves the page. Opening it with ?key= logs the device in: the key

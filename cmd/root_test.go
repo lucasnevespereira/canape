@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -43,5 +46,21 @@ func TestDeviceNameSkipsRandomIDs(t *testing.T) {
 	d := &discovery.Device{IP: "192.168.1.20", Alias: "89BDF4CE-C879-4487-825E-3A77793065E8", Host: "iphone-de-alex.home"}
 	if got := deviceName(d); got != "iphone-de-alex" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestStaleServeIsNotRunning(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if _, ok := runningServe(); ok {
+		t.Fatal("running without a pid file")
+	}
+	os.MkdirAll(filepath.Dir(pidFile()), 0o700)
+	// Left over from before a restart: the pid is ours, but no dashboard answers.
+	os.WriteFile(pidFile(), fmt.Appendf(nil, "%d 127.0.0.1:1\n", os.Getpid()), 0o600)
+	if pid, addr, ok := readPidFile(); !ok || pid != os.Getpid() || addr != "127.0.0.1:1" {
+		t.Fatalf("readPidFile = %d %q %v", pid, addr, ok)
+	}
+	if _, ok := runningServe(); ok {
+		t.Fatal("a stale pid file counts as running")
 	}
 }
