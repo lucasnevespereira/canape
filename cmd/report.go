@@ -14,7 +14,7 @@ import (
 )
 
 // Device kinds, grouped the way a non-expert thinks about them.
-var groups = []string{"TVs", "Streaming", "Speakers", "Phones", "Computers", "Printers", "Other"}
+var groups = []string{"TVs", "Streaming", "Speakers", "Cameras", "Phones", "Computers", "Printers", "Smart home", "Other"}
 
 var kindGroup = map[string]string{
 	"LG webOS TV": "TVs", "Samsung TV": "TVs", "Sony TV": "TVs",
@@ -22,7 +22,17 @@ var kindGroup = map[string]string{
 	"Speaker": "Speakers", "AirPlay device": "Speakers",
 	"iPhone": "Phones", "iPad": "Phones",
 	"Mac": "Computers", "this machine": "Computers",
-	"Printer": "Printers",
+	"Printer":    "Printers",
+	"Camera":     "Cameras",
+	"Smart plug": "Smart home", "Light": "Smart home", "Pet feeder": "Smart home", "Robot vacuum": "Smart home",
+	"Thermostat": "Smart home", "Smart home device": "Smart home",
+}
+
+// Makers whose devices are almost always one kind of thing, for devices that
+// announce nothing. Espressif and Tuya chips run most smart plugs and bulbs.
+var makerGroup = map[string]string{
+	"Espressif": "Smart home", "Tuya": "Smart home", "Shelly": "Smart home", "Philips Hue": "Smart home",
+	"Netatmo": "Smart home", "Sonos": "Speakers",
 }
 
 // report is what bare `canape` prints: the network in plain words, then what
@@ -81,6 +91,9 @@ func report() error {
 		}
 		count++
 		group := kindGroup[d.Kind()]
+		if group == "" {
+			group = makerGroup[d.Vendor]
+		}
 		if group == "" {
 			group = "Other"
 		}
@@ -209,16 +222,40 @@ func pairedTVState(h *home.Here) string {
 
 // deviceName is the friendliest name a device gives: its announced name, or
 // the first part of its network name ("iphone-de-alex" from "iphone-de-alex.home").
+// The maker fills in when the network name says little.
 func deviceName(d *discovery.Device) string {
-	host, _, _ := strings.Cut(d.Host, ".")
 	alias := d.Alias
-	if uuidRe.MatchString(alias) {
-		alias = "" // iPhones announce a random ID instead of their name
+	if uuidRe.MatchString(alias) || alias == "SpotifyConnect" {
+		alias = "" // iPhones announce a random ID instead of their name, speakers the service
 	}
-	return firstNonEmpty(d.Name, alias, host, d.IP)
+	if name := firstNonEmpty(d.Name, alias); name != "" {
+		return name
+	}
+	host, _, _ := strings.Cut(d.Host, ".")
+	if junkHost.MatchString(strings.ToLower(host)) {
+		host = ""
+	}
+	brand, _, _ := strings.Cut(strings.ToLower(d.Vendor), " ")
+	switch {
+	case host != "" && d.Vendor != "" && !strings.ContainsAny(host, "-_") && !strings.Contains(strings.ToLower(host), brand):
+		return d.Vendor + " " + host // "c210" says little, "TP-Link c210" says a camera
+	case host != "":
+		return host
+	case d.Vendor != "":
+		noun := strings.ToLower(d.Kind()) // "Tuya smart plug", "TP-Link camera"
+		if noun == "" || noun == "smart home device" {
+			noun = "device"
+		}
+		return d.Vendor + " " + noun
+	}
+	return d.IP
 }
 
 var uuidRe = regexp.MustCompile(`^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$`)
+
+// Network names that say nothing: chip defaults ("lwip0", "espressif",
+// "esp_1a2b3c"), bare "android", and the long random ones macOS hands out.
+var junkHost = regexp.MustCompile(`^(lwip\d*|espressif|esp[-_]?[0-9a-f]*|android(-[0-9a-f]+)?|localhost|unknown)$|[0-9a-z]{20,}`)
 
 // summarize lists a few names and counts the rest, so a long group stays one line.
 func summarize(names []string, max int) string {

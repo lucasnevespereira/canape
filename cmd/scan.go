@@ -40,6 +40,10 @@ func scan() error {
 		}
 		fmt.Printf("\n  %-15s %s\n", d.IP, title)
 		line("mac", d.MAC)
+		if d.Model == "" && d.HW == "" {
+			// A TV's MAC often names its Wi-Fi chip maker, not the brand on the TV.
+			line("maker", makerWords(d))
+		}
 		line("host", d.Host)
 		model := d.Model
 		if !strings.Contains(model, d.HW) {
@@ -67,11 +71,18 @@ func scan() error {
 	if len(other) > 0 {
 		fmt.Printf("\nOther devices on the network (%d)\n\n", len(other))
 		for _, d := range other {
-			fmt.Printf("  %-15s %-17s  %s\n", d.IP, d.MAC, d.Host)
+			fmt.Printf("  %-15s %-17s  %-14s %s\n", d.IP, d.MAC, makerWords(d), d.Host)
 		}
 	}
 	fmt.Println("\nscan only looks. To pair what canape supports here: canape setup")
 	return nil
+}
+
+func makerWords(d *discovery.Device) string {
+	if discovery.Private(d.MAC) {
+		return "private address" // phones and computers hide their maker on purpose
+	}
+	return d.Vendor
 }
 
 func line(label, value string) {

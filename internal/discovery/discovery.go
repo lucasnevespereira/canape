@@ -23,6 +23,7 @@ import (
 
 type Device struct {
 	IP, MAC  string
+	Vendor   string // who made it, from the MAC, e.g. "Espressif"
 	Host     string // reverse DNS
 	Name     string // SSDP friendly name
 	Alias    string // mDNS instance name
@@ -340,6 +341,7 @@ func (s *scanner) arp() {
 			continue
 		}
 		s.get(ip).MAC = mac
+		s.get(ip).Vendor = Vendor(mac)
 	}
 	ifaces, _ := net.Interfaces()
 	for _, iface := range ifaces {
@@ -372,6 +374,10 @@ var ports = map[int]struct{ kind, label string }{
 	8002: {"Samsung TV", "Samsung control (wss)"},
 	5555: {"Android TV / Google Cast", "ADB, Android network debugging"},
 	8009: {"Android TV / Google Cast", "Google Cast"},
+	554:  {"Camera", "video stream (RTSP)"},
+	2020: {"Camera", "camera control (ONVIF)"},
+	8800: {"Camera", "Tapo camera video"},
+	6668: {"Smart home device", "Tuya control"},
 }
 
 func (s *scanner) enrich() {
@@ -387,14 +393,21 @@ func (s *scanner) enrich() {
 				d.Host = strings.TrimSuffix(names[0], ".")
 				s.mu.Unlock()
 			}
+			// All ports at once: a device that drops probes makes each one wait the full timeout.
+			var pw sync.WaitGroup
 			for p := range ports {
-				if c, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", d.IP, p), 700*time.Millisecond); err == nil {
-					c.Close()
-					s.mu.Lock()
-					d.Open = append(d.Open, p)
-					s.mu.Unlock()
-				}
+				pw.Add(1)
+				go func() {
+					defer pw.Done()
+					if c, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", d.IP, p), 700*time.Millisecond); err == nil {
+						c.Close()
+						s.mu.Lock()
+						d.Open = append(d.Open, p)
+						s.mu.Unlock()
+					}
+				}()
 			}
+			pw.Wait()
 			s.mu.Lock()
 			sort.Ints(d.Open)
 			s.mu.Unlock()
@@ -435,6 +448,8 @@ func (d *Device) Kind() string {
 		return "Freebox Player"
 	case has("mdns:ipp"), has("mdns:ipps"), has("mdns:printer"), has("mdns:pdl-datastream"):
 		return "Printer"
+	case contains(d.Open, 554), contains(d.Open, 2020), contains(d.Open, 8800) && d.Vendor == "TP-Link":
+		return "Camera"
 	case strings.HasPrefix(d.HW, "Mac"), strings.Contains(lowerHost(d), "macbook"), strings.Contains(lowerHost(d), "imac"):
 		return "Mac"
 	case strings.Contains(lowerHost(d), "iphone"):
@@ -446,7 +461,24 @@ func (d *Device) Kind() string {
 	case has("mdns:airplay"):
 		return "AirPlay device"
 	}
+	for _, w := range nameKinds {
+		if strings.Contains(lowerHost(d), w[0]) {
+			return w[1]
+		}
+	}
+	if contains(d.Open, 6668) {
+		return "Smart home device" // Tuya: a plug, a bulb or a sensor, it doesn't say which
+	}
 	return ""
+}
+
+// Words in a device's name that give away what it is, like "tapo-plug" or
+// "petlibro-air-smart-feeder". Checked in order.
+var nameKinds = [][2]string{
+	{"plug", "Smart plug"}, {"bulb", "Light"}, {"lamp", "Light"}, {"light", "Light"},
+	{"camera", "Camera"}, {"doorbell", "Camera"}, {"feeder", "Pet feeder"},
+	{"vacuum", "Robot vacuum"}, {"roborock", "Robot vacuum"}, {"roomba", "Robot vacuum"},
+	{"thermostat", "Thermostat"},
 }
 
 // lowerHost is the device's network name, lowercased, for name-based guesses
