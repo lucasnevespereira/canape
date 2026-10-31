@@ -30,6 +30,7 @@ func TestDeviceNameUsesMaker(t *testing.T) {
 		{discovery.Device{Host: "pet-feeder.home", Vendor: "Tuya"}, "pet-feeder"},
 		{discovery.Device{Host: "tapo-plug.home", Vendor: "TP-Link"}, "tapo-plug"},
 		{discovery.Device{Host: "android.home", Alias: "SpotifyConnect", Vendor: "Amazon"}, "Amazon device"},
+		{discovery.Device{Host: "lwip0.home", Vendor: "TP-Link", Open: []int{554}}, "TP-Link camera"},
 		{discovery.Device{IP: "192.168.1.20"}, "192.168.1.20"},
 	} {
 		if got := deviceName(&c.d); got != c.want {

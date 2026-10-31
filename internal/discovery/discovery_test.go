@@ -99,3 +99,22 @@ func TestVendor(t *testing.T) {
 		t.Error("private address not detected")
 	}
 }
+
+func TestKindFromPortsAndName(t *testing.T) {
+	for _, c := range []struct {
+		d    Device
+		want string
+	}{
+		{Device{Open: []int{443, 8800}, Vendor: "TP-Link"}, "Camera"},
+		{Device{Open: []int{8800}, Vendor: "Espressif"}, ""}, // 8800 means a camera on Tapo only
+		{Device{Open: []int{554}}, "Camera"},
+		{Device{Open: []int{6668}}, "Smart home device"},
+		{Device{Host: "tapo-plug.home"}, "Smart plug"},
+		{Device{Host: "pet-feeder.home"}, "Pet feeder"},
+		{Device{Host: "iphone-de-alex.home"}, "iPhone"},
+	} {
+		if got := c.d.Kind(); got != c.want {
+			t.Errorf("Kind(%+v) = %q, want %q", c.d, got, c.want)
+		}
+	}
+}

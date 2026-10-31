@@ -14,7 +14,7 @@ import (
 )
 
 // Device kinds, grouped the way a non-expert thinks about them.
-var groups = []string{"TVs", "Streaming", "Speakers", "Phones", "Computers", "Printers", "Smart home", "Other"}
+var groups = []string{"TVs", "Streaming", "Speakers", "Cameras", "Phones", "Computers", "Printers", "Smart home", "Other"}
 
 var kindGroup = map[string]string{
 	"LG webOS TV": "TVs", "Samsung TV": "TVs", "Sony TV": "TVs",
@@ -22,7 +22,10 @@ var kindGroup = map[string]string{
 	"Speaker": "Speakers", "AirPlay device": "Speakers",
 	"iPhone": "Phones", "iPad": "Phones",
 	"Mac": "Computers", "this machine": "Computers",
-	"Printer": "Printers",
+	"Printer":    "Printers",
+	"Camera":     "Cameras",
+	"Smart plug": "Smart home", "Light": "Smart home", "Pet feeder": "Smart home", "Robot vacuum": "Smart home",
+	"Thermostat": "Smart home", "Smart home device": "Smart home",
 }
 
 // Makers whose devices are almost always one kind of thing, for devices that
@@ -239,7 +242,11 @@ func deviceName(d *discovery.Device) string {
 	case host != "":
 		return host
 	case d.Vendor != "":
-		return d.Vendor + " device"
+		noun := strings.ToLower(d.Kind()) // "Tuya smart plug", "TP-Link camera"
+		if noun == "" || noun == "smart home device" {
+			noun = "device"
+		}
+		return d.Vendor + " " + noun
 	}
 	return d.IP
 }
