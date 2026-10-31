@@ -208,6 +208,8 @@
   .hrocker button:hover { color: var(--text); }
   .hrocker button:active, .hrocker button.pressed { background: var(--surface-2); color: var(--text); }
   .hrocker output { min-width: 9ch; text-align: center; }
+  .console.pc-keys { max-width: 360px; margin: 0 auto 18px; }
+  .pc-keys + .type { max-width: 360px; margin: 0 auto 22px; }
   .pc-note { max-width: 360px; margin: 18px auto 0; color: var(--muted); font-size: 13px; text-align: center; }
 
   /* Wi-Fi */
@@ -265,6 +267,7 @@
   <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
   <symbol id="i-keyboard" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"/></symbol>
+  <symbol id="i-delete" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7zM17 9.5l-5 5M12 9.5l5 5"/></symbol>
   <symbol id="i-mute" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M11 5 6 9H3v6h3l5 4V5ZM22 9l-6 6M16 9l6 6"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m6 15 6-6 6 6"/></symbol>
   <symbol id="i-next" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></symbol>
@@ -385,6 +388,26 @@
       <button class="icon-btn press" data-pc="forward" aria-label="Skip ahead" title="Skip ahead"><svg><use href="#i-forward"/></svg></button>
     </div>
     <p class="play-label">Play or pause the player in front</p>
+    <div class="console pc-keys">
+      <div class="side">
+        <button class="icon-btn" id="pc-keyboard" aria-label="Type on the computer" title="Type on the computer" aria-expanded="false"><svg><use href="#i-keyboard"/></svg></button>
+      </div>
+      <div class="dial" role="group" aria-label="Arrows">
+        <button class="up press" data-pc="up" aria-label="Up" title="Up"><svg><use href="#i-chev"/></svg></button>
+        <button class="right press" data-pc="forward" aria-label="Right" title="Right"><svg style="transform:rotate(90deg)"><use href="#i-chev"/></svg></button>
+        <button class="down press" data-pc="down" aria-label="Down" title="Down"><svg style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button>
+        <button class="left press" data-pc="back" aria-label="Left" title="Left"><svg style="transform:rotate(-90deg)"><use href="#i-chev"/></svg></button>
+        <button class="ok press" data-pc="enter" title="Enter">OK</button>
+      </div>
+      <div class="side">
+        <button class="icon-btn press" data-pc="delete" aria-label="Delete" title="Delete the last letter"><svg><use href="#i-delete"/></svg></button>
+      </div>
+    </div>
+    <form class="type" id="pc-type-form" hidden>
+      <input id="pc-type-text" placeholder="Type on the computer" aria-label="Text to type on the computer"
+        autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+      <button class="btn primary" type="submit">Send</button>
+    </form>
     <div class="pc-grid">
       <div class="hrocker" role="group" aria-label="Computer volume">
         <button class="press" data-pc="volume-down" aria-label="Volume down">−</button>
@@ -752,9 +775,27 @@ async function pcKey(key) {
   pcBusy = false;
 }
 for (const b of document.querySelectorAll("[data-pc]")) {
-  if (["back", "forward", "volume-up", "volume-down"].includes(b.dataset.pc)) holdable(b, () => pcKey(b.dataset.pc));
+  if (["back", "forward", "up", "down", "delete", "volume-up", "volume-down"].includes(b.dataset.pc)) holdable(b, () => pcKey(b.dataset.pc));
   else b.onclick = () => pcKey(b.dataset.pc);
 }
+
+$("#pc-keyboard").onclick = () => {
+  const form = $("#pc-type-form");
+  form.hidden = !form.hidden;
+  $("#pc-keyboard").setAttribute("aria-expanded", String(!form.hidden));
+  $("#pc-keyboard").setAttribute("aria-pressed", String(!form.hidden));
+  if (!form.hidden) $("#pc-type-text").focus();
+};
+$("#pc-type-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const text = $("#pc-type-text").value;
+  if (!text) return;
+  try {
+    await api("/api/computer/type", { text });
+    $("#pc-type-text").value = "";
+    toast("Typed on the computer");
+  } catch (err) { fail(err); }
+};
 
 // Network
 async function loadDevices() {

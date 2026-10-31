@@ -119,9 +119,11 @@ canape pc click              # click the video so it listens to keys
 canape pc back               # skip back (the player's left arrow)
 canape pc volume up
 canape pc fullscreen
+canape pc up                 # the arrow keys and Enter, for menus
+canape pc type "the office"  # type into the app in front, like a search box
 ```
 
-The dashboard has the same buttons on the computer's page. They go to the app in front, so keep the player in front. If a web video ignores them, tap **Click the video** first: web players only listen to keys once they have focus. For Spotify or Music, use **Play or pause music** (`canape pc media`), which sends the media key.
+The dashboard has the same buttons on the computer's page, plus arrows and a keyboard to type with. They go to the app in front, so keep the player in front. If a web video ignores them, tap **Click the video** first: web players only listen to keys once they have focus. For Spotify or Music, use **Play or pause music** (`canape pc media`), which sends the media key.
 
 The first time, macOS asks to allow the app canape runs in under **System Settings > Privacy & Security > Accessibility**. Volume works without it. macOS only for now: Linux and Windows are on the roadmap.
 
@@ -153,7 +155,7 @@ For Claude Desktop, add this to its config (Settings → Developer → Edit Conf
 
 Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
 
-Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `computer_key`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
+Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Several homes
 

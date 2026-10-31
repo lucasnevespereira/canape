@@ -27,6 +27,21 @@ function run(argv) {
     }
     return "ok";
   }
+  if (argv[0] === "text") {
+    // One event per character carrying the character itself, so any keyboard
+    // layout and accents work. A Ref holds one UTF-16 unit, so no emoji.
+    const s = argv[1];
+    for (let i = 0; i < s.length; i++) {
+      const ch = Ref("S");
+      ch[0] = s.charCodeAt(i);
+      for (const down of [true, false]) {
+        const ev = $.CGEventCreateKeyboardEvent(null, 0, down);
+        $.CGEventKeyboardSetUnicodeString(ev, 1, ch);
+        $.CGEventPost(0, ev);
+      }
+    }
+    return "ok";
+  }
   const code = parseInt(argv[1], 10);
   for (const down of [true, false]) {
     if (argv[0] === "media") {
@@ -48,6 +63,10 @@ var keys = map[Key][2]string{
 	Space:      {"key", "49"},
 	Back:       {"key", "123"},
 	Forward:    {"key", "124"},
+	Up:         {"key", "126"},
+	Down:       {"key", "125"},
+	Enter:      {"key", "36"},
+	Delete:     {"key", "51"},
 	Fullscreen: {"key", "3"},
 	Escape:     {"key", "53"},
 }
@@ -67,7 +86,14 @@ func Press(k Key) error {
 	if !ok {
 		return fmt.Errorf("unknown key %q", k)
 	}
-	out, err := exec.Command("osascript", "-l", "JavaScript", "-e", keyScript, spec[0], spec[1]).CombinedOutput()
+	return post(spec[0], spec[1])
+}
+
+// Type types text into the app in front, like a search box in the browser.
+func Type(text string) error { return post("text", text) }
+
+func post(kind, arg string) error {
+	out, err := exec.Command("osascript", "-l", "JavaScript", "-e", keyScript, kind, arg).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("osascript: %v: %s", err, strings.TrimSpace(string(out)))
 	}
