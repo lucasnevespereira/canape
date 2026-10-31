@@ -103,11 +103,18 @@ canape serve
 
 canape prints a QR code. Scan it with your phone camera and the dashboard opens, already logged in. The link is printed under it too, for a laptop. It logs a device in once, so only use it on your own devices.
 
-Each device has its own page: the TV remote (power, volume, arrows and OK, Home, Back, typing, inputs, apps), the computer's play and volume buttons, and the Wi-Fi QR for your guests. On a phone, tabs at the bottom switch between them in one tap, and **More** lists every device and who's online. On a computer, the devices stay on the left and the page shows on the right, and the keyboard works like the TV remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute.
+Each device has its own page: the TV remote (power, volume, arrows and OK, Home, Back, typing, inputs, apps), the computer's play, arrow, typing and volume buttons, and the Wi-Fi QR for your guests. On a phone, tabs at the bottom switch between them in one tap, and **More** lists every device and who's online. On a computer, the devices stay on the left and the page shows on the right, and the keyboard works like the TV remote: arrows, Enter for OK, Esc for Back, + and − for volume, M to mute.
 
 To use it like an app, add it to your home screen (Share → Add to Home Screen on iPhone). It opens full screen with its own icon.
 
-The dashboard only runs while `canape serve` does. Most things work without it: `canape wifi tv` puts the Wi-Fi QR on the TV in one command.
+The dashboard only runs while `canape serve` does. To keep it running after you close the terminal:
+
+```bash
+canape serve -d      # prints the QR, then runs in the background. Run it again to see the QR again
+canape serve stop
+```
+
+It stops when the computer restarts. Most things work without it: `canape wifi tv` puts the Wi-Fi QR on the TV in one command.
 
 ## The computer streaming to the TV
 

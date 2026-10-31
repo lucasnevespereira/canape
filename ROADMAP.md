@@ -48,7 +48,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - **Devices that need no pairing first:** Chromecast, Roku, Sonos. Zero friction at anyone's house.
 - **More TVs.** Samsung (Tizen) and Sony Bravia, each built in front of a real TV. `canape scan` already recognizes them.
 - **Android TV**, through ADB or the Android TV remote protocol. Covers projectors like XGIMI and the Freebox Player.
-- **Run in the background.** `canape serve` as a service (launchd on macOS, systemd on Linux and Pi), so the dashboard is always there.
+- **Always on, on a Pi.** `canape serve` as a systemd service on Linux, so the dashboard survives restarts. On a Mac, `canape serve -d` covers it: a launchd service would lose the Accessibility permission that computer keys need.
 
 ## A network helper for everyone
 
