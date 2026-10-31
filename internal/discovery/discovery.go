@@ -23,6 +23,7 @@ import (
 
 type Device struct {
 	IP, MAC  string
+	Vendor   string // who made it, from the MAC, e.g. "Espressif"
 	Host     string // reverse DNS
 	Name     string // SSDP friendly name
 	Alias    string // mDNS instance name
@@ -340,6 +341,7 @@ func (s *scanner) arp() {
 			continue
 		}
 		s.get(ip).MAC = mac
+		s.get(ip).Vendor = Vendor(mac)
 	}
 	ifaces, _ := net.Interfaces()
 	for _, iface := range ifaces {

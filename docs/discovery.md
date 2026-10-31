@@ -13,6 +13,7 @@ This prints every device on the network with its IP, MAC, model and open control
 - SSDP search: finds the LG TV, the Freebox and other UPnP devices
 - mDNS search: finds the Apple TV, Macs, Google Cast, Spotify Connect
 - Sends one UDP packet to every address, so silent devices show up in the ARP table with their MAC
+- Maker lookup: the first half of each MAC names its maker, from the IEEE list embedded in the binary (`internal/discovery/oui.txt.gz`, refreshed with `gen_oui.go`). Phones and computers often use a random private MAC, which names no maker
 - Reverse DNS: the Freebox resolves device hostnames (`lgwebostv.home`, `freebox-player-pop.home`)
 - Port probe: 3000/3001 (LG control), 5555 (ADB), 8009 (Google Cast)
 

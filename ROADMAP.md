@@ -62,7 +62,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 
 ### Knowing your network
 
-- **Who's on my Wi-Fi?** Every device with a readable name and a kind (phone, TV, speaker, camera, smart plug), guessed from its maker and what it announces. "lwip0" becomes "Tuya smart plug".
+- **Who's on my Wi-Fi?** Every device with a readable name and a kind (phone, TV, speaker, camera, smart plug), guessed from its maker and what it announces. Makers are done: "lwip0" became "Tuya device", in a Smart home group. Next is the kind: "Tuya smart plug".
 - **Name devices once.** "PETLIBRO-Air Smart Feeder" becomes "Cat feeder", saved in the home, shown everywhere.
 - **Spot an unknown device.** Devices nobody named stand out, with a hint about what they probably are, so a stranger on the Wi-Fi is easy to notice.
 - **New device alert** while `canape serve` runs: "A new device joined: iPhone".
