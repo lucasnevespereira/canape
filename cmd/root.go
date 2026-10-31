@@ -35,6 +35,8 @@ Computer (the one canape runs on, macOS for now)
   canape pc play               play or pause the player in front (the space bar)
   canape pc click              click the video so the player listens to keys
   canape pc back | forward     skip back or ahead in the player
+  canape pc up | down | enter  the arrow keys and Enter, for menus
+  canape pc type [text]        type into the app in front (asks if no text)
   canape pc media              the media key, for Spotify or Music
   canape pc volume up|down     change the computer's volume
   canape pc mute               mute or unmute the computer

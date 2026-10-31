@@ -40,7 +40,7 @@ main.go                    calls cmd.Run, nothing else
 cmd/                       the canape command: arguments and terminal output. report.go is bare `canape`, setup.go the guided flow
 internal/home/             the current network's home (wake.go: computers saved for Wake-on-LAN, picked by the user): Load/Save, PairTV/ConnectTV/WakeTV via drivers.go, Status, Devices
 internal/store/            state.json: homes keyed by router MAC, dashboard key, legacy migration
-internal/computer/         keys on the machine canape runs on (play/pause media key, arrows, F, Esc, volume). macOS via osascript and JavaScript for Automation, so no cgo. Other systems return ErrUnsupported
+internal/computer/         keys and typing on the machine canape runs on (play/pause media key, arrows, Enter, F, Esc, volume). macOS via osascript and JavaScript for Automation, so no cgo. Other systems return ErrUnsupported
 internal/discovery/        network scan (SSDP, mDNS, ARP, reverse DNS, control ports), Router(), MAC(), LocalIP(), FindFreebox(). wifi.go: this machine's Wi-Fi link. internet.go: is the internet up
 internal/tv/               tv.TV interface, shared types, key names, Wake-on-LAN, name matching (Match)
 internal/tv/lg/            LG driver. app.go installs a web app through Developer Mode (wraps LG's ares CLI)

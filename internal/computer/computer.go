@@ -17,6 +17,10 @@ const (
 	Click      Key = "click"       // clicks the middle of the screen so a web player gets focus
 	Back       Key = "back"        // left arrow: most players skip back 5 or 10 seconds
 	Forward    Key = "forward"     // right arrow
+	Up         Key = "up"          // arrows up and down, for menus and lists
+	Down       Key = "down"        //
+	Enter      Key = "enter"       //
+	Delete     Key = "delete"      // backspace, to fix what was typed
 	Fullscreen Key = "fullscreen"  // F
 	Escape     Key = "escape"      // leaves fullscreen
 	VolumeUp   Key = "volume-up"   // the computer's own volume
@@ -24,7 +28,7 @@ const (
 	Mute       Key = "mute"        // toggles
 )
 
-var Keys = []Key{Space, PlayPause, Click, Back, Forward, Fullscreen, Escape, VolumeUp, VolumeDown, Mute}
+var Keys = []Key{Space, PlayPause, Click, Back, Forward, Up, Down, Enter, Delete, Fullscreen, Escape, VolumeUp, VolumeDown, Mute}
 
 var ErrUnsupported = errors.New("controlling this computer isn't supported on " + runtime.GOOS + " yet")
 

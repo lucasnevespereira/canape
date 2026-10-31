@@ -174,7 +174,7 @@ func Run() error {
 		Name:        "computer_key",
 		Description: "Press a key on the computer running canape, usually the one streaming to the TV: pause the movie, skip back or forward, change its volume. macOS only for now.",
 	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
-		Key string `json:"key" jsonschema:"space plays or pauses the player in front (best for web video), playpause is the media key (Spotify, Music), click focuses the video, then back, forward, fullscreen, escape, volume-up, volume-down, mute"`
+		Key string `json:"key" jsonschema:"space plays or pauses the player in front (best for web video), playpause is the media key (Spotify, Music), click focuses the video, then back, forward (left and right arrows), up, down, enter, delete, fullscreen, escape, volume-up, volume-down, mute"`
 	}) (*sdk.CallToolResult, reply, error) {
 		key := computer.Key(in.Key)
 		if !slices.Contains(computer.Keys, key) {
@@ -184,6 +184,18 @@ func Run() error {
 			return nil, reply{}, err
 		}
 		return nil, reply{"Pressed " + in.Key + " on " + computer.Name() + "."}, nil
+	})
+
+	sdk.AddTool(s, &sdk.Tool{
+		Name:        "computer_type_text",
+		Description: "Type text into the app in front on the computer running canape, like a search box in the browser. macOS only for now.",
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
+		Text string `json:"text"`
+	}) (*sdk.CallToolResult, reply, error) {
+		if err := computer.Type(in.Text); err != nil {
+			return nil, reply{}, err
+		}
+		return nil, reply{"Typed on " + computer.Name() + "."}, nil
 	})
 
 	sdk.AddTool(s, &sdk.Tool{

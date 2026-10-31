@@ -66,6 +66,7 @@ func Run(addr string) error {
 	mux.HandleFunc("GET /api/devices", sv.auth(devices))
 	mux.HandleFunc("GET /api/computer", sv.auth(computerInfo))
 	mux.HandleFunc("POST /api/computer/key", sv.auth(computerKey))
+	mux.HandleFunc("POST /api/computer/type", sv.auth(computerType))
 	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(t tv.TV, _ struct{}) error {
 		return t.Open(sv.baseURL + "/wifi")
 	})))
@@ -230,6 +231,21 @@ func computerKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	computerInfo(w, r) // the page shows the new volume
+}
+
+func computerType(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if err := computer.Type(req.Text); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // manifest makes "Add to Home Screen" open canape full screen with its icon.

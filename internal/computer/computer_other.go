@@ -9,4 +9,6 @@ func Name() string { return hostname() }
 
 func Press(Key) error { return ErrUnsupported }
 
+func Type(string) error { return ErrUnsupported }
+
 func GetVolume() (Volume, error) { return Volume{}, ErrUnsupported }
