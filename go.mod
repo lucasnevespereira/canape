@@ -8,6 +8,8 @@ require github.com/coder/websocket v1.8.15
 
 require rsc.io/qr v0.2.0
 
+require golang.org/x/crypto v0.58.0
+
 require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/modelcontextprotocol/go-sdk v1.8.0

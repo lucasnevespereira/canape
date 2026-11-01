@@ -66,6 +66,7 @@ On a new network, start with `canape setup`. Run `canape scan` when you're curio
 ## What it does
 
 - **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins.
+- **Apple TV:** play, pause, skip, the remote's arrows and buttons, from your phone or the terminal. Pairs once with the code on its screen.
 - **The computer streaming to the TV:** play, pause, skip back or ahead, volume and full screen on the Mac canape runs on, from your phone. No getting up to pause the movie.
 - **Wi-Fi QR code:** in the terminal, on the TV, or on your phone. Guests scan it and join. canape reads the network name from the router and you type the password once. It never changes your router's settings.
 - **Network:** `canape scan` lists every device on the network, `canape devices` shows who's online (Freebox).
@@ -82,6 +83,7 @@ Home Assistant is a hub: installed once per house, always on, thousands of integ
 | Device | Status |
 |---|---|
 | LG webOS TVs | Supported. Tested on a 2019 LG (webOS 4). [Setup](docs/lg.md) |
+| Apple TV | Supported: remote buttons, play and pause, skip. Tested on an Apple TV 4K. [Notes](docs/appletv.md) |
 | Samsung TVs (Tizen) | Detected by `canape scan`. Driver wanted: [adding a TV](docs/adding-a-tv.md) |
 | Sony Bravia TVs | Detected by `canape scan`. Driver wanted |
 | Freebox routers | Supported: device list and Wi-Fi name. Tested on a Pop. [Setup](docs/freebox.md) |
@@ -115,6 +117,19 @@ canape serve stop
 ```
 
 It stops when the computer restarts. Most things work without it: `canape wifi tv` puts the Wi-Fi QR on the TV in one command.
+
+## Apple TV
+
+canape controls an Apple TV directly over the Wi-Fi, like the iPhone's remote. Pair it once, with the code it shows:
+
+```bash
+canape appletv pair     # canape setup does it too
+canape appletv pause    # play or pause
+canape appletv forward  # 10 seconds ahead, or: forward 30
+canape appletv ok       # also up, down, left, right, back, home
+```
+
+The dashboard has an Apple TV page laid out like its remote. On a computer, the keyboard works too: arrows, Enter, Esc for Back, space to play or pause, J and L to skip. Going through the TV doesn't work: a TV's network remote never reaches a box on HDMI.
 
 ## The computer streaming to the TV
 
@@ -162,7 +177,7 @@ For Claude Desktop, add this to its config (Settings → Developer → Edit Conf
 
 Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
 
-Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
+Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `appletv_key`, `appletv_skip`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Several homes
 

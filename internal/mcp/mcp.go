@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lucasnevespereira/canape/internal/appletv"
 	"github.com/lucasnevespereira/canape/internal/computer"
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
@@ -171,6 +172,24 @@ func Run() error {
 		})
 
 	sdk.AddTool(s, &sdk.Tool{
+		Name:        "appletv_key",
+		Description: "Press a button on the Apple TV's remote: play or pause, arrows, OK, back, home, volume, sleep or wake.",
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
+		Key string `json:"key" jsonschema:"one of playpause, up, down, left, right, select (OK), menu (back), home, volume-up, volume-down, sleep, wake"`
+	}) (*sdk.CallToolResult, reply, error) {
+		return withAppleTV(func(c *appletv.Client) (string, error) { return "Pressed " + in.Key + ".", c.Press(in.Key) })
+	})
+
+	sdk.AddTool(s, &sdk.Tool{
+		Name:        "appletv_skip",
+		Description: "Skip ahead in what the Apple TV is playing, or back with negative seconds.",
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
+		Seconds float64 `json:"seconds" jsonschema:"seconds to skip, negative to go back, e.g. 10 or -30"`
+	}) (*sdk.CallToolResult, reply, error) {
+		return withAppleTV(func(c *appletv.Client) (string, error) { return "Skipped.", c.Skip(in.Seconds) })
+	})
+
+	sdk.AddTool(s, &sdk.Tool{
 		Name:        "computer_key",
 		Description: "Press a key on the computer running canape, usually the one streaming to the TV: pause the movie, skip back or forward, change its volume. macOS only for now.",
 	}, func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
@@ -241,6 +260,20 @@ func withTV(fn func(tv.TV) (string, error)) (*sdk.CallToolResult, reply, error) 
 	}
 	defer t.Close()
 	msg, err := fn(t)
+	return nil, reply{msg}, err
+}
+
+func withAppleTV(fn func(*appletv.Client) (string, error)) (*sdk.CallToolResult, reply, error) {
+	h, err := home.Load()
+	if err != nil {
+		return nil, reply{}, err
+	}
+	c, err := h.ConnectAppleTV()
+	if err != nil {
+		return nil, reply{}, err
+	}
+	defer c.Close()
+	msg, err := fn(c)
 	return nil, reply{msg}, err
 }
 

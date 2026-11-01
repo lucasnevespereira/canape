@@ -51,7 +51,21 @@ func setup() error {
 		}
 	}
 
-	fmt.Println("\n2. Router")
+	fmt.Println("\n2. Apple TV")
+	if h.AppleTV != nil {
+		fmt.Printf("   %s, already paired.\n", h.AppleTV.Name)
+	} else {
+		switch err := pairAppleTV(h, in, "   "); {
+		case errors.Is(err, errNoAppleTV):
+			fmt.Println("   None on this network.")
+		case errors.Is(err, errSkipped):
+			fmt.Println("   Skipped. Pair it later with: canape appletv pair")
+		case err != nil:
+			fmt.Printf("   %v\n   Skipped. Try again with: canape appletv pair\n", err)
+		}
+	}
+
+	fmt.Println("\n3. Router")
 	switch f := discovery.FindFreebox(); {
 	case h.Freebox.AppToken != "":
 		fmt.Println("   Freebox, already paired.")
@@ -75,7 +89,7 @@ func setup() error {
 		}
 	}
 
-	fmt.Println("\n3. Wi-Fi to share")
+	fmt.Println("\n4. Wi-Fi to share")
 	if h.Wifi.SSID != "" {
 		fmt.Printf("   %s, already saved. Change it with: canape wifi set\n", h.Wifi.SSID)
 	} else if !askWifi(h, in, "   ") {
@@ -102,7 +116,7 @@ func otherTVs(indent string) {
 	}
 	for _, d := range res.Devices {
 		switch k := d.Kind(); k {
-		case "Samsung TV", "Sony TV", "Android TV / Google Cast", "Apple TV", "Freebox Player":
+		case "Samsung TV", "Sony TV", "Android TV / Google Cast", "Freebox Player":
 			fmt.Printf("%sFound a %s at %s. canape can't control it yet.\n", indent, k, d.IP)
 			fmt.Printf("%sWant to help add it? See docs/adding-a-tv.md\n", indent)
 		}

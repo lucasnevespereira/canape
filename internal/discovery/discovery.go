@@ -33,6 +33,8 @@ type Device struct {
 	Self     bool   // the machine running the scan
 	Services map[string]bool
 	Open     []int // control ports that answered, see PortLabel
+	// CompanionPort is where an Apple TV takes remote commands, from mDNS.
+	CompanionPort int
 }
 
 // Freebox is what the box says about itself without authentication.
@@ -265,6 +267,7 @@ func (s *scanner) mdns() {
 	instances := map[string]string{} // instance -> service type
 	from := map[string]string{}      // instance -> IP that answered
 	targets := map[string]string{}   // instance -> host name (SRV)
+	srvPorts := map[string]int{}     // instance -> port (SRV)
 	addrs := map[string]string{}     // host name -> IPv4 (A)
 	txt := map[string][]string{}     // instance -> TXT key=value pairs
 	buf := make([]byte, 9000)
@@ -296,6 +299,7 @@ func (s *scanner) mdns() {
 				from[target] = addr.IP.String()
 			case *dnsmessage.SRVResource:
 				targets[name] = b.Target.String()
+				srvPorts[name] = int(b.Port)
 			case *dnsmessage.AResource:
 				addrs[name] = net.IP(b.A[:]).String()
 			case *dnsmessage.TXTResource:
@@ -318,6 +322,9 @@ func (s *scanner) mdns() {
 		d := s.get(ip)
 		short := strings.TrimPrefix(strings.Split(typ, ".")[0], "_")
 		d.Services["mdns:"+short] = true
+		if short == "companion-link" {
+			d.CompanionPort = srvPorts[inst]
+		}
 		if d.Alias == "" || short == "airplay" || short == "googlecast" {
 			d.Alias = strings.TrimSuffix(inst, "."+typ)
 		}
