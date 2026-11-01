@@ -95,16 +95,21 @@ func tvCommand(cmd string, args []string) error {
 		if err = t.SetMute(mute); err == nil {
 			fmt.Println(map[bool]string{true: "Muted.", false: "Unmuted."}[mute])
 		}
+	case "play", "pause", "rewind", "forward":
+		err = t.Key(map[string]string{"play": tv.KeyPlay, "pause": tv.KeyPause, "rewind": tv.KeyRewind, "forward": tv.KeyForward}[cmd])
 	case "key":
 		if len(args) == 0 {
-			return errors.New("usage: canape tv key <home|back|up|down|left|right|ok>")
+			return errors.New("usage: canape tv key <home|back|up|down|left|right|ok|play|pause|rewind|forward>")
 		}
 		key := strings.ToUpper(args[0])
-		if key == "OK" {
+		switch key {
+		case "OK":
 			key = tv.KeyOK
+		case "FORWARD":
+			key = tv.KeyForward
 		}
 		if !slices.Contains(tv.Keys, key) {
-			return fmt.Errorf("unknown key %q. Keys: home, back, up, down, left, right, ok", args[0])
+			return fmt.Errorf("unknown key %q. Keys: home, back, up, down, left, right, ok, play, pause, rewind, forward", args[0])
 		}
 		err = t.Key(key)
 	case "type":

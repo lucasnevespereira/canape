@@ -130,9 +130,9 @@ func Run() error {
 			return withTV(func(t tv.TV) (string, error) { return "Opened " + in.URL + ".", t.Open(in.URL) })
 		})
 
-	sdk.AddTool(s, &sdk.Tool{Name: "tv_press_key", Description: "Press a remote key on the TV."},
+	sdk.AddTool(s, &sdk.Tool{Name: "tv_press_key", Description: "Press a remote key on the TV: arrows, OK, Home, Back, or play, pause, rewind and fast-forward for what's playing."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
-			Key string `json:"key" jsonschema:"one of HOME, BACK, UP, DOWN, LEFT, RIGHT, ENTER (ENTER is the OK key)"`
+			Key string `json:"key" jsonschema:"one of HOME, BACK, UP, DOWN, LEFT, RIGHT, ENTER (the OK key), PLAY, PAUSE, REWIND, FASTFORWARD. The media keys work in the TV's own apps, never on a box plugged into HDMI like an Apple TV"`
 		}) (*sdk.CallToolResult, reply, error) {
 			key := strings.ToUpper(in.Key)
 			if !slices.Contains(tv.Keys, key) {

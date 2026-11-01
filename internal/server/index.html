@@ -144,6 +144,7 @@
   }
   .dial .ok:active, .dial .ok.pressed { transform: scale(0.95); background: var(--accent-soft); }
 
+  .media { display: flex; justify-content: center; gap: 14px; margin-top: 22px; }
   .type { display: flex; gap: 8px; margin-top: 18px; }
   .type input {
     flex: 1; min-width: 0; height: 46px; padding: 0 14px; font: inherit; color: var(--text);
@@ -362,6 +363,12 @@
           <button class="icon-btn press" data-key="BACK" aria-label="Back" title="Back (Esc)"><svg><use href="#i-back"/></svg></button>
           <button class="icon-btn" id="keyboard" aria-label="Type on the TV" title="Type on the TV" aria-expanded="false"><svg><use href="#i-keyboard"/></svg></button>
         </div>
+      </div>
+
+      <div class="media" role="group" aria-label="Playback">
+        <button class="icon-btn press" data-key="REWIND" aria-label="Rewind" title="Rewind"><svg><use href="#i-rewind"/></svg></button>
+        <button class="icon-btn" id="tv-playpause" aria-label="Play or pause" title="Play or pause (space)"><svg><use href="#i-playpause"/></svg></button>
+        <button class="icon-btn press" data-key="FASTFORWARD" aria-label="Fast-forward" title="Fast-forward"><svg><use href="#i-forward"/></svg></button>
       </div>
 
       <form class="type" id="type-form" hidden>
@@ -613,6 +620,8 @@ function nowShowing() {
 
 function renderTV() {
   const tv = state.tv;
+  // The media keys don't reach a box on HDMI, like an Apple TV.
+  $(".media").hidden = tv.inputs.some((i) => i.id === tv.current);
   $("#vol").textContent = tv.volume;
   $("#mute").setAttribute("aria-pressed", String(tv.muted));
 
@@ -828,6 +837,14 @@ $("#net-refresh").onclick = loadDevices;
 
 // A keyboard works like the TV remote on a computer. Tooltips list the keys.
 const keyMap = { ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT", Enter: "ENTER", Escape: "BACK", Backspace: "BACK", h: "HOME" };
+// The TV can't say whether a video plays, so play/pause alternates, starting
+// with pause.
+let nextPause = true;
+function tvPlayPause() {
+  pressKey(nextPause ? "PAUSE" : "PLAY");
+  nextPause = !nextPause;
+}
+$("#tv-playpause").onclick = tvPlayPause;
 document.addEventListener("keydown", (e) => {
   if (state.page !== "tv") return;
   if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -841,6 +858,10 @@ document.addEventListener("keydown", (e) => {
   } else if (e.key === "+" || e.key === "=") nudgeVolume(1);
   else if (e.key === "-") nudgeVolume(-1);
   else if (e.key === "m") $("#mute").click();
+  else if (e.key === " ") {
+    e.preventDefault();
+    tvPlayPause();
+  }
 });
 
 // Open where the user left off: the remote is one tap away at most.

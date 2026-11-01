@@ -41,9 +41,15 @@ const (
 	KeyLeft  = "LEFT"
 	KeyRight = "RIGHT"
 	KeyOK    = "ENTER"
+	// Media keys reach the TV's own apps. On an LG they never reach a box on
+	// HDMI, even with SimpLink on: its network remote stays inside the TV.
+	KeyPlay    = "PLAY"
+	KeyPause   = "PAUSE"
+	KeyRewind  = "REWIND"
+	KeyForward = "FASTFORWARD"
 )
 
-var Keys = []string{KeyHome, KeyBack, KeyUp, KeyDown, KeyLeft, KeyRight, KeyOK}
+var Keys = []string{KeyHome, KeyBack, KeyUp, KeyDown, KeyLeft, KeyRight, KeyOK, KeyPlay, KeyPause, KeyRewind, KeyForward}
 
 var ErrUnsupported = errors.New("this TV doesn't support that")
 

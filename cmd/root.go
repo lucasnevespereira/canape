@@ -26,6 +26,8 @@ TV
   canape tv input [name]       list inputs, or switch to one (e.g. hdmi1, apple)
   canape tv app [name]         list apps, or open one (e.g. youtube)
   canape tv open <url>         open a web page on the TV
+  canape tv play | pause       play or pause a video in the TV's own apps
+  canape tv rewind | forward   rewind or fast-forward in the TV's own apps
   canape tv key <key>          press home, back, up, down, left, right or ok
   canape tv type [text]        type into the selected text field (asks if no text)
   canape tv notify <message>   show a message on the TV

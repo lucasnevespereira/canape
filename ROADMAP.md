@@ -33,6 +33,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - The MCP tools from Claude itself (only driven by raw test messages so far)
 - The dashboard added to an iPhone home screen: it should log itself in on first launch
 - Play/pause with the space bar and Click the video on a web player
+- Play, pause, rewind and fast-forward in an LG app (Prime Video, Netflix). Tested only on HDMI, where they don't get through
 - Typing on the computer from the dashboard, with accents, on a French keyboard
 - Pressing Enter to skip the Freebox pairing in `canape setup`
 - `install.sh` on a Raspberry Pi (only run on a Mac so far)
