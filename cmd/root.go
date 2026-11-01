@@ -30,6 +30,13 @@ TV
   canape tv type [text]        type into the selected text field (asks if no text)
   canape tv notify <message>   show a message on the TV
 
+Apple TV
+  canape appletv pair          pair it once, with the code on its screen (setup does it too)
+  canape appletv play | pause  play or pause
+  canape appletv forward [s]   skip ahead 10 seconds, or s seconds
+  canape appletv rewind [s]    skip back
+  canape appletv <button>      up, down, left, right, ok, back, home, volume up|down, sleep
+
 Computer (the one canape runs on, macOS for now)
   canape pc play               play or pause the player in front (the space bar)
   canape pc click              click the video so the player listens to keys
@@ -93,6 +100,8 @@ func Run(args []string) int {
 			rest = []string{"status"}
 		}
 		err = tvCommand(rest[0], rest[1:])
+	case "appletv", "atv":
+		err = appleTVCommand(rest)
 	case "wifi":
 		err = wifiCommand(rest)
 	case "pc", "computer":

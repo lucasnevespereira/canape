@@ -84,7 +84,7 @@ func report() error {
 	row("Internet", inet.Words())
 
 	byGroup := map[string][]string{}
-	count, lgUnpaired, tvSeen := 0, false, false
+	count, lgUnpaired, atvUnpaired, tvSeen := 0, false, false, false
 	for _, d := range scan.Devices {
 		if d.IP == gatewayIP || d.Kind() == "Freebox" {
 			continue
@@ -107,6 +107,11 @@ func report() error {
 		case d.Kind() == "LG webOS TV":
 			name += " (not paired yet)"
 			lgUnpaired = true
+		case d.Kind() == "Apple TV" && h.AppleTV != nil && d.Alias == h.AppleTV.Name:
+			name += " (paired)"
+		case d.Kind() == "Apple TV" && d.CompanionPort > 0:
+			name += " (not paired yet)"
+			atvUnpaired = true
 		case d.Kind() == "Samsung TV", d.Kind() == "Sony TV":
 			name += " (not supported yet)"
 		}
@@ -133,15 +138,21 @@ func report() error {
 	case !h.Saved:
 		next = append(next, [2]string{"canape setup", "save this network and its Wi-Fi"})
 	}
+	if atvUnpaired && h.AppleTV == nil {
+		next = append(next, [2]string{"canape appletv pair", "pair the Apple TV"})
+	}
 	if h.TV.Key != "" {
 		next = append(next, [2]string{"canape tv", "control the TV"})
+	}
+	if h.AppleTV != nil {
+		next = append(next, [2]string{"canape appletv", "control the Apple TV"})
 	}
 	if h.Wifi.SSID != "" {
 		next = append(next, [2]string{"canape wifi tv", "show the Wi-Fi QR on the TV for guests"})
 	} else if h.Saved {
 		next = append(next, [2]string{"canape wifi set", "save this Wi-Fi to share it as a QR code"})
 	}
-	if h.TV.Key != "" || h.Wifi.SSID != "" {
+	if h.TV.Key != "" || h.AppleTV != nil || h.Wifi.SSID != "" {
 		next = append(next, [2]string{"canape serve", "do it from your phone"})
 	}
 	next = append(next, [2]string{"canape scan", "every device in detail"})

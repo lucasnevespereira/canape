@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/lucasnevespereira/canape/internal/appletv"
 )
 
 type TV struct {
@@ -41,6 +43,16 @@ type Home struct {
 	Wifi      Wifi       `json:"wifi"`
 	Freebox   Freebox    `json:"freebox"`
 	Computers []Computer `json:"computers,omitempty"`
+	AppleTV   *AppleTV   `json:"appletv,omitempty"`
+}
+
+// AppleTV is a paired Apple TV. Its address can change, its name is how
+// canape finds it again.
+type AppleTV struct {
+	Name    string              `json:"name"`
+	IP      string              `json:"ip"`
+	Port    int                 `json:"port"`
+	Pairing appletv.Credentials `json:"pairing"`
 }
 
 type State struct {

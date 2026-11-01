@@ -259,6 +259,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-sofa" viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h12a2 2 0 0 1 2 2v3a2.5 2.5 0 0 1 2 2.45V18h-2v2h-2v-2H6v2H4v-2H2v-4.55A2.5 2.5 0 0 1 4 11V8a2 2 0 0 1 2-2Zm0 2v3.3c.6.4 1 1.1 1 1.9V14h10v-.8c0-.8.4-1.5 1-1.9V8H6Z"/></symbol>
   <symbol id="i-tv" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M3 5h18v12H3zM8 21h8M12 17v4"/></symbol>
+  <symbol id="i-atv" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="8" width="18" height="8" rx="2.5"/><path d="M7.5 12h.01"/></g></symbol>
   <symbol id="i-computer" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4 5h16v11H4zM2 19h20"/></symbol>
   <symbol id="i-wifi" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M2 8.8a15 15 0 0 1 20 0M5 12.6a10 10 0 0 1 14 0M8.5 16.3a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1.2" fill="currentColor"/></symbol>
   <symbol id="i-more" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
@@ -300,6 +301,11 @@
         <span class="icon"><svg><use href="#i-tv"/></svg></span>
         <span class="title">TV</span>
         <span class="sub"><i class="dot"></i><span>Connecting</span></span>
+      </button>
+      <button class="card" data-go="appletv" id="card-atv" hidden>
+        <span class="icon"><svg><use href="#i-atv"/></svg></span>
+        <span class="title">Apple TV</span>
+        <span class="sub"><span></span></span>
       </button>
       <button class="card" data-go="computer" id="card-computer" hidden>
         <span class="icon"><svg><use href="#i-computer"/></svg></span>
@@ -375,6 +381,42 @@
       <h3><span>Apps</span><button class="link" id="apps-toggle" hidden></button></h3>
       <div class="apps" id="apps"></div>
     </div>
+  </section>
+
+  <!-- Apple TV: laid out like the Siri Remote -->
+  <section class="page" id="page-appletv">
+    <div class="bar">
+      <h2>Apple TV</h2><span class="state" id="atv-name"></span>
+    </div>
+    <div class="topline">
+      <button class="icon-btn" data-atv="sleep" aria-label="Put the Apple TV to sleep" title="Sleep"><svg><use href="#i-power"/></svg></button>
+    </div>
+    <div class="console">
+      <div class="side">
+        <div class="rocker" role="group" aria-label="Volume">
+          <button class="press" data-atv="volume-up" aria-label="Volume up" title="Volume up (+)">+</button>
+          <output>Vol</output>
+          <button class="press" data-atv="volume-down" aria-label="Volume down" title="Volume down (−)">−</button>
+        </div>
+      </div>
+      <div class="dial" role="group" aria-label="Arrows">
+        <button class="up press" data-atv="up" aria-label="Up" title="Up (↑)"><svg><use href="#i-chev"/></svg></button>
+        <button class="right press" data-atv="right" aria-label="Right" title="Right (→)"><svg style="transform:rotate(90deg)"><use href="#i-chev"/></svg></button>
+        <button class="down press" data-atv="down" aria-label="Down" title="Down (↓)"><svg style="transform:rotate(180deg)"><use href="#i-chev"/></svg></button>
+        <button class="left press" data-atv="left" aria-label="Left" title="Left (←)"><svg style="transform:rotate(-90deg)"><use href="#i-chev"/></svg></button>
+        <button class="ok press" data-atv="select" title="OK (Enter)">OK</button>
+      </div>
+      <div class="side">
+        <button class="icon-btn press" data-atv="home" aria-label="Home" title="Home (H)"><svg><use href="#i-home"/></svg></button>
+        <button class="icon-btn press" data-atv="menu" aria-label="Back" title="Back (Esc)"><svg><use href="#i-back"/></svg></button>
+      </div>
+    </div>
+    <div class="transport">
+      <button class="icon-btn press" data-skip="-10" aria-label="Back 10 seconds" title="Back 10 seconds (J)"><svg><use href="#i-rewind"/></svg></button>
+      <button class="play press" data-atv="playpause" aria-label="Play or pause" title="Play or pause (space)"><svg><use href="#i-playpause"/></svg></button>
+      <button class="icon-btn press" data-skip="10" aria-label="Ahead 10 seconds" title="Ahead 10 seconds (L)"><svg><use href="#i-forward"/></svg></button>
+    </div>
+    <p class="play-label">Skips go 10 seconds back or ahead</p>
   </section>
 
   <!-- The computer canape runs on -->
@@ -460,7 +502,7 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const wide = matchMedia("(min-width: 900px)");
-const PAGES = ["home", "tv", "computer", "wifi", "network"];
+const PAGES = ["home", "tv", "appletv", "computer", "wifi", "network"];
 const APPS_SHOWN = 8;
 const state = { home: null, tv: null, pc: null, devices: null, page: "home", allApps: false, showPassword: false };
 
@@ -517,6 +559,7 @@ function go(page) {
 const MAX_DEVICE_TABS = 4;
 function renderTabs() {
   const tabs = [{ page: "tv", label: "TV", icon: "i-tv" }];
+  if (state.home && state.home.appletv) tabs.push({ page: "appletv", label: "Apple TV", icon: "i-atv" });
   if (state.pc && state.pc.supported) tabs.push({ page: "computer", label: shortName(state.pc.name), icon: "i-computer" });
   tabs.push({ page: "wifi", label: "Wi-Fi", icon: "i-wifi" });
   const shown = tabs.slice(0, MAX_DEVICE_TABS);
@@ -563,6 +606,11 @@ async function loadHome() {
   $("#no-wifi").hidden = !!h.ssid;
   $("#wifi").hidden = !h.ssid;
   setCard("#card-wifi", h.ssid || "Not saved yet");
+  $("#card-atv").hidden = !h.appletv;
+  setCard("#card-atv", h.appletv);
+  $("#atv-name").textContent = h.appletv;
+  renderTabs();
+  if (state.page === "appletv" && !h.appletv) go("home");
   if (h.ssid) {
     $("#ssid").textContent = h.ssid;
     renderPassword();
@@ -797,6 +845,22 @@ $("#pc-type-form").onsubmit = async (e) => {
   } catch (err) { fail(err); }
 };
 
+// Apple TV. Each press is its own connection, so one at a time.
+let atvBusy = false;
+async function atv(path, body) {
+  if (atvBusy) return;
+  atvBusy = true;
+  try { await api(path, body); } catch (e) { fail(e); }
+  atvBusy = false;
+}
+const atvKey = (key) => atv("/api/appletv/key", { key });
+const atvSkip = (seconds) => atv("/api/appletv/skip", { seconds });
+for (const b of document.querySelectorAll("[data-atv]")) {
+  if (["up", "down", "left", "right", "volume-up", "volume-down"].includes(b.dataset.atv)) holdable(b, () => atvKey(b.dataset.atv));
+  else b.onclick = () => atvKey(b.dataset.atv);
+}
+for (const b of document.querySelectorAll("[data-skip]")) b.onclick = () => atvSkip(Number(b.dataset.skip));
+
 // Network
 async function loadDevices() {
   $("#net-error").hidden = true;
@@ -828,6 +892,21 @@ $("#net-refresh").onclick = loadDevices;
 
 // A keyboard works like the TV remote on a computer. Tooltips list the keys.
 const keyMap = { ArrowUp: "UP", ArrowDown: "DOWN", ArrowLeft: "LEFT", ArrowRight: "RIGHT", Enter: "ENTER", Escape: "BACK", Backspace: "BACK", h: "HOME" };
+// On the Apple TV page the keyboard is its remote.
+const atvKeyMap = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "select", Escape: "menu", Backspace: "menu", h: "home", " ": "playpause", "+": "volume-up", "=": "volume-up", "-": "volume-down" };
+document.addEventListener("keydown", (e) => {
+  if (state.page !== "appletv") return;
+  if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target.closest("button") && (e.key === "Enter" || e.key === " ")) return;
+  const key = atvKeyMap[e.key];
+  if (key) {
+    e.preventDefault();
+    const btn = document.querySelector(`[data-atv="${key}"]`);
+    if (btn) { btn.classList.add("pressed"); setTimeout(() => btn.classList.remove("pressed"), 120); }
+    atvKey(key);
+  } else if (e.key === "j" || e.key === "l") atvSkip(e.key === "j" ? -10 : 10);
+});
+
 document.addEventListener("keydown", (e) => {
   if (state.page !== "tv") return;
   if (e.target.closest("input, textarea") || e.metaKey || e.ctrlKey || e.altKey) return;

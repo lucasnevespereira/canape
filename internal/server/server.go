@@ -19,6 +19,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/lucasnevespereira/canape/internal/appletv"
 	"github.com/lucasnevespereira/canape/internal/computer"
 	"github.com/lucasnevespereira/canape/internal/discovery"
 	"github.com/lucasnevespereira/canape/internal/home"
@@ -88,6 +89,16 @@ func Run(addr string, ready func(homeName, link string)) error {
 	mux.HandleFunc("GET /api/computer", sv.auth(computerInfo))
 	mux.HandleFunc("POST /api/computer/key", sv.auth(computerKey))
 	mux.HandleFunc("POST /api/computer/type", sv.auth(computerType))
+	mux.HandleFunc("POST /api/appletv/key", sv.auth(appleTVHandler(func(c *appletv.Client, r struct {
+		Key string `json:"key"`
+	}) error {
+		return c.Press(r.Key)
+	})))
+	mux.HandleFunc("POST /api/appletv/skip", sv.auth(appleTVHandler(func(c *appletv.Client, r struct {
+		Seconds float64 `json:"seconds"`
+	}) error {
+		return c.Skip(r.Seconds)
+	})))
 	mux.HandleFunc("POST /api/wifi/tv", sv.auth(tvHandler(sv, func(t tv.TV, _ struct{}) error {
 		return t.Open(sv.baseURL + "/wifi")
 	})))
@@ -201,10 +212,46 @@ func homeInfo(w http.ResponseWriter, r *http.Request) {
 		"name":     h.Name,
 		"tv":       h.TV.Key != "",
 		"tvBrand":  home.BrandName(h.TV.Brand),
+		"appletv":  appleTVName(h),
 		"router":   h.Freebox.AppToken != "",
 		"ssid":     h.Wifi.SSID,
 		"password": h.Wifi.Password, // already public on /wifi, for guests
 	})
+}
+
+func appleTVName(h *home.Here) string {
+	if h.AppleTV == nil {
+		return ""
+	}
+	return h.AppleTV.Name
+}
+
+// appleTVHandler connects for each request: it takes about 80 ms, and a
+// kept connection would go stale when the Apple TV sleeps.
+func appleTVHandler[T any](do func(*appletv.Client, T) error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req T
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		h, err := home.Load()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		c, err := h.ConnectAppleTV()
+		if err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+		defer c.Close()
+		if err := do(c, req); err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}
 }
 
 func devices(w http.ResponseWriter, r *http.Request) {
