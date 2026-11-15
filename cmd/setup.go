@@ -116,7 +116,10 @@ func otherTVs(indent string) {
 	}
 	for _, d := range res.Devices {
 		switch k := d.Kind(); k {
-		case "Samsung TV", "Sony TV", "Android TV / Google Cast", "Freebox Player":
+		case "Android TV / Google Cast":
+			fmt.Printf("%sFound an Android TV or Google Cast device at %s.\n", indent, d.IP)
+			fmt.Printf("%sIf it runs Android TV, turn on network debugging to control it: docs/android.md\n", indent)
+		case "Samsung TV", "Sony TV", "Freebox Player":
 			fmt.Printf("%sFound a %s at %s. canape can't control it yet.\n", indent, k, d.IP)
 			fmt.Printf("%sWant to help add it? See docs/adding-a-tv.md\n", indent)
 		}

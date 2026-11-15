@@ -101,7 +101,7 @@ func report() error {
 		switch {
 		case d.Self:
 			name = "this computer"
-		case d.Kind() == "LG webOS TV" && h.TV.Key != "" && d.IP == h.TV.IP:
+		case h.TV.Key != "" && d.IP == h.TV.IP:
 			name = home.BrandName(h.TV.Brand) + " TV (" + tvState + ")"
 			tvSeen = true
 		case d.Kind() == "LG webOS TV":

@@ -25,6 +25,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - [x] `canape setup`, help grouped by task
 - [x] The network report: bare `canape` shows the Wi-Fi (band, signal, security), the box, whether the internet works, and every device grouped by kind, then what to do next. Works without router access
 - [x] A moved TV is found again, setup names TVs it can't control yet
+- [x] Android TVs and projectors over ADB: power off, volume, keys, typing, apps, web pages
 - [x] `canape version`, releases with binaries, Homebrew updated automatically
 
 ## Still to check on real hardware
@@ -39,6 +40,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - `install.sh` on a Raspberry Pi (only run on a Mac so far)
 - The network report with a VPN on (it should still run, without a home)
 - The network report on a network without router access (a friend's box, a hotel), and on Linux where the Wi-Fi line is empty for now
+- Android TV: typing, opening a URL, standby and Wake-on-LAN, finding it again after an IP change, pairing from `canape setup`, an Android 10 TV (volume reading)
 
 ## Next
 
@@ -48,7 +50,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - **French.** The dashboard and the CLI in French, picked from the phone's or the computer's language.
 - **Devices that need no pairing first:** Chromecast, Roku, Sonos. Zero friction at anyone's house.
 - **More TVs.** Samsung (Tizen) and Sony Bravia, each built in front of a real TV. `canape scan` already recognizes them.
-- **Android TV**, through ADB or the Android TV remote protocol. Covers projectors like XGIMI and the Freebox Player.
+- **Android TV inputs.** HDMI inputs through TvInputManager, and the Android TV remote protocol for TVs where network debugging is locked away.
 - **Always on, on a Pi.** `canape serve` as a systemd service on Linux, so the dashboard survives restarts. On a Mac, `canape serve -d` covers it: a launchd service would lose the Accessibility permission that computer keys need.
 
 ## A network helper for everyone

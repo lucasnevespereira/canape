@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lucasnevespereira/canape/internal/tv"
+	"github.com/lucasnevespereira/canape/internal/tv/android"
 	"github.com/lucasnevespereira/canape/internal/tv/lg"
 )
 
@@ -21,6 +22,17 @@ type driver struct {
 
 // drivers is keyed by the brand saved in each home's TV.
 var drivers = map[string]driver{
+	"android": {
+		name:     "Android TV",
+		discover: android.Discover,
+		connect: func(ctx context.Context, ip, key string, prompted func()) (tv.TV, string, error) {
+			t, key, err := android.Connect(ctx, ip, key, prompted)
+			if err != nil {
+				return nil, "", err
+			}
+			return t, key, nil
+		},
+	},
 	"lg": {
 		name:     "LG webOS",
 		discover: lg.Discover,

@@ -22,7 +22,7 @@ No hub to install, nothing to keep running, no network knowledge needed.
   <img src="docs/images/report.png" alt="canape describing a network: Wi-Fi quality, the box, the internet, and every device grouped by kind" width="760">
 </p>
 
-> Early project. The network report works on any Wi-Fi. Control works today with LG webOS TVs, macOS computers and Freebox routers. What's next is in the [roadmap](ROADMAP.md).
+> Early project. The network report works on any Wi-Fi. Control works today with LG webOS TVs, Android TVs, macOS computers and Freebox routers. What's next is in the [roadmap](ROADMAP.md).
 
 ## Quick start
 
@@ -84,6 +84,7 @@ Home Assistant is a hub: installed once per house, always on, thousands of integ
 |---|---|
 | LG webOS TVs | Supported. Tested on a 2019 LG (webOS 4). [Setup](docs/lg.md) |
 | Apple TV | Supported: remote buttons, play and pause, skip. Tested on an Apple TV 4K. [Notes](docs/appletv.md) |
+| Android TVs and projectors | Supported over network debugging: power off, volume, keys, typing, apps. Tested on an XGIMI Halo+. [Setup](docs/android.md) |
 | Samsung TVs (Tizen) | Detected by `canape scan`. Driver wanted: [adding a TV](docs/adding-a-tv.md) |
 | Sony Bravia TVs | Detected by `canape scan`. Driver wanted |
 | Freebox routers | Supported: device list and Wi-Fi name. Tested on a Pop. [Setup](docs/freebox.md) |
@@ -217,6 +218,7 @@ The Freebox still lists canape as an app with access: remove it in Freebox OS, u
 ## More
 
 - [docs/lg.md](docs/lg.md): LG setup, fewer ads on the home screen, a Wi-Fi app for the TV, how canape talks to the TV
+- [docs/android.md](docs/android.md): turning on network debugging, what works on Android TV
 - [docs/freebox.md](docs/freebox.md): Freebox pairing and permissions
 - [docs/discovery.md](docs/discovery.md): finding devices by hand
 - [docs/adding-a-tv.md](docs/adding-a-tv.md): add support for another TV brand

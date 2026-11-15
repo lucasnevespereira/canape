@@ -18,7 +18,7 @@ Who it's for: someone who has never heard of an IP address. Plain words, every p
 - In: more TV brands, Chromecast. "What's this device?" and new-device alerts. Waking a computer. Router speed and status. Named scenes ("movie mode"). Handing lights and sensors to an existing Home Assistant.
 - Out: automations ("when X, do Y"), history and graphs, a plugin marketplace, anything that needs a 24/7 server, writing router settings. That's Home Assistant's job.
 
-Supported today: LG webOS TVs, Apple TV, Freebox routers. Protocol notes live in `docs/` (lg.md, appletv.md, freebox.md, discovery.md). Read the one for the device you touch before changing its code.
+Supported today: LG webOS TVs, Android TVs, Apple TV, Freebox routers. Protocol notes live in `docs/` (lg.md, android.md, appletv.md, freebox.md, discovery.md). Read the one for the device you touch before changing its code.
 
 ## Decisions and why
 
@@ -47,6 +47,7 @@ internal/discovery/        network scan (SSDP, mDNS, ARP, reverse DNS, control p
 internal/tv/               tv.TV interface, shared types, key names, Wake-on-LAN, name matching (Match)
 internal/appletv/          Apple TV over Companion: OPACK and TLV8 encodings, SRP pairing, encrypted commands
 internal/tv/lg/            LG driver. app.go installs a web app through Developer Mode (wraps LG's ares CLI)
+internal/tv/android/       Android TV driver: speaks ADB itself (RSA sign-in, shell streams), each action is a shell command
 internal/router/freebox/   Freebox OS API client
 internal/wifi/             Wi-Fi QR payload, the big-QR page, ShowOnTV
 internal/qrcode/           draws any QR: SVG, terminal blocks, PNG

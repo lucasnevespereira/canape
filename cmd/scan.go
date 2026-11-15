@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -63,6 +64,12 @@ func scan() error {
 		switch d.Kind() {
 		case "LG webOS TV":
 			line("canape", "supported. Pair it with: canape setup")
+		case "Android TV / Google Cast":
+			if slices.Contains(d.Open, 5555) {
+				line("canape", "supported. Pair it with: canape setup")
+			} else {
+				line("canape", "turn on network debugging to control it: docs/android.md")
+			}
 		case "Samsung TV", "Sony TV":
 			line("canape", "not supported yet. Help add it: docs/adding-a-tv.md")
 		}
