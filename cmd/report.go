@@ -55,13 +55,13 @@ func report() error {
 		inet    discovery.Internet
 		scan    *discovery.Result
 		scanErr error
-		tvState string
+		tvState map[string]string
 	)
 	wg.Add(4)
 	go func() { defer wg.Done(); link = discovery.WiFi() }()
 	go func() { defer wg.Done(); inet = discovery.CheckInternet() }()
 	go func() { defer wg.Done(); scan, scanErr = discovery.Scan() }()
-	go func() { defer wg.Done(); tvState = pairedTVState(h) }()
+	go func() { defer wg.Done(); tvState = pairedTVStates(h) }()
 	wg.Wait()
 	if scanErr != nil {
 		return scanErr
@@ -84,7 +84,7 @@ func report() error {
 	row("Internet", inet.Words())
 
 	byGroup := map[string][]string{}
-	count, lgUnpaired, atvUnpaired, tvSeen := 0, false, false, false
+	count, lgUnpaired, atvUnpaired, tvSeen := 0, false, false, map[string]bool{}
 	for _, d := range scan.Devices {
 		if d.IP == gatewayIP || d.Kind() == "Freebox" {
 			continue
@@ -101,9 +101,10 @@ func report() error {
 		switch {
 		case d.Self:
 			name = "this computer"
-		case h.TV.Key != "" && d.IP == h.TV.IP:
-			name = home.BrandName(h.TV.Brand) + " TV (" + tvState + ")"
-			tvSeen = true
+		case pairedAt(h, d.IP) != "":
+			n := pairedAt(h, d.IP)
+			name = tvLabel(h, n, tvState[n])
+			tvSeen[n] = true
 		case d.Kind() == "LG webOS TV":
 			name += " (not paired yet)"
 			lgUnpaired = true
@@ -117,9 +118,11 @@ func report() error {
 		}
 		byGroup[group] = append(byGroup[group], name)
 	}
-	if h.TV.Key != "" && !tvSeen {
-		// A TV that's fully off doesn't answer the scan, but it's still there.
-		byGroup["TVs"] = append(byGroup["TVs"], home.BrandName(h.TV.Brand)+" TV ("+tvState+")")
+	for _, t := range h.TVs {
+		if !tvSeen[t.Name] {
+			// A TV that's fully off doesn't answer the scan, but it's still there.
+			byGroup["TVs"] = append(byGroup["TVs"], tvLabel(h, t.Name, tvState[t.Name]))
+		}
 	}
 	fmt.Println()
 	row("Devices", fmt.Sprintf("%d online", count))
@@ -141,8 +144,12 @@ func report() error {
 	if atvUnpaired && h.AppleTV == nil {
 		next = append(next, [2]string{"canape appletv pair", "pair the Apple TV"})
 	}
-	if h.TV.Key != "" {
+	switch len(h.TVs) {
+	case 0:
+	case 1:
 		next = append(next, [2]string{"canape tv", "control the TV"})
+	default:
+		next = append(next, [2]string{"canape tv " + h.TVs[0].Name, "control the " + h.TVs[0].Name + " TV"})
 	}
 	if h.AppleTV != nil {
 		next = append(next, [2]string{"canape appletv", "control the Apple TV"})
@@ -152,7 +159,7 @@ func report() error {
 	} else if h.Saved {
 		next = append(next, [2]string{"canape wifi set", "save this Wi-Fi to share it as a QR code"})
 	}
-	if h.TV.Key != "" || h.AppleTV != nil || h.Wifi.SSID != "" {
+	if len(h.TVs) > 0 || h.AppleTV != nil || h.Wifi.SSID != "" {
 		next = append(next, [2]string{"canape serve", "do it from your phone"})
 	}
 	next = append(next, [2]string{"canape scan", "every device in detail"})
@@ -219,16 +226,41 @@ func boxLine(h *home.Here, scan *discovery.Result, gatewayIP string) string {
 	return line
 }
 
-func pairedTVState(h *home.Here) string {
-	if h.TV.Key == "" {
-		return ""
+// pairedTVStates says, per TV name, whether it's on and what it shows.
+// ponytail: dials TVs one after the other, since ConnectTV may save the home. Fine while it runs beside the multi-second scan.
+func pairedTVStates(h *home.Here) map[string]string {
+	states := map[string]string{}
+	for _, saved := range h.TVs {
+		t, err := h.ConnectTV(saved.Name)
+		if err != nil {
+			states[saved.Name] = "paired, off"
+			continue
+		}
+		states[saved.Name] = "paired, on" + nowShowing(t)
+		t.Close()
 	}
-	t, err := h.ConnectTV()
-	if err != nil {
-		return "paired, off"
+	return states
+}
+
+// pairedAt names the paired TV at ip, or "".
+func pairedAt(h *home.Here, ip string) string {
+	for _, t := range h.TVs {
+		if t.IP == ip {
+			return t.Name
+		}
 	}
-	defer t.Close()
-	return "paired, on" + nowShowing(t)
+	return ""
+}
+
+// tvLabel reads "LG webOS TV (paired, on)" with one TV, and adds the name
+// once there are several: "projector, Android TV (paired, off)".
+func tvLabel(h *home.Here, name, state string) string {
+	saved, _ := h.FindTV(name)
+	label := home.BrandName(saved.Brand) + " TV (" + state + ")"
+	if len(h.TVs) > 1 {
+		label = saved.Name + ", " + label
+	}
+	return label
 }
 
 // deviceName is the friendliest name a device gives: its announced name, or

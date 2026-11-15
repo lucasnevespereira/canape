@@ -13,46 +13,84 @@ import (
 
 	"github.com/lucasnevespereira/canape/internal/home"
 	"github.com/lucasnevespereira/canape/internal/qrcode"
+	"github.com/lucasnevespereira/canape/internal/store"
 	"github.com/lucasnevespereira/canape/internal/tv"
 	"github.com/lucasnevespereira/canape/internal/tv/lg"
 	"github.com/lucasnevespereira/canape/internal/wifi"
 )
 
-func tvCommand(cmd string, args []string) error {
+// tvCommands are the words after "canape tv". Anything else first is a TV
+// name: "canape tv projector app youtube".
+var tvCommands = []string{"pair", "install-app", "on", "off", "status", "volume", "mute", "key", "type", "notify", "input", "app", "open", "call", "rename", "forget"}
+
+func tvCommand(args []string) error {
 	s, err := home.Load()
 	if err != nil {
 		return err
+	}
+	name := ""
+	if len(args) > 0 && !slices.Contains(tvCommands, args[0]) {
+		name, args = args[0], args[1:]
+	}
+	cmd := "status"
+	if len(args) > 0 {
+		cmd, args = args[0], args[1:]
 	}
 	switch cmd {
 	case "pair":
 		return pair(s)
 	case "install-app":
-		return installApp(s)
+		return installApp(s, name)
+	case "status":
+		if name == "" {
+			if len(s.TVs) == 0 {
+				return errors.New("no TV paired on this network. Run: canape setup")
+			}
+			for _, t := range s.TVs {
+				tvStatus(s, t.Name)
+			}
+			return nil
+		}
+		if _, err := s.FindTV(name); err != nil {
+			return err
+		}
+		tvStatus(s, name)
+		return nil
+	case "rename":
+		if len(args) != 1 {
+			return errors.New("usage: canape tv <name> rename <new name>")
+		}
+		if err := s.RenameTV(name, args[0]); err != nil {
+			return err
+		}
+		fmt.Printf("Renamed. Use it with: canape tv %s app youtube\n", args[0])
+		return nil
+	case "forget":
+		if name == "" {
+			return fmt.Errorf("say which TV to forget: canape tv <name> forget. The TVs here: %s", s.TVNames())
+		}
+		gone, err := s.ForgetTV(name)
+		if err == nil {
+			fmt.Printf("Forgot the %s TV. Pair it again with: canape tv pair\n", gone)
+		}
+		return err
 	case "on":
-		if err := s.WakeTV(); err != nil {
+		if err := s.WakeTV(name); err != nil {
 			return err
 		}
 		fmt.Println(`Wake-on-LAN sent. If the TV stays off, enable "Turn on via Wi-Fi" in its settings.`)
 		return nil
-	case "status":
-		if s.TV.Key == "" {
-			return errors.New("no TV paired on this network. Run: canape setup")
-		}
-		t, err := s.ConnectTV()
-		if err != nil {
-			fmt.Printf("%s at %s: off or unreachable. Turn it on with: canape tv on\n", home.BrandName(s.TV.Brand), s.TV.IP)
-			return nil
-		}
-		defer t.Close()
-		v, err := t.Volume()
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s at %s: on%s, volume %d%s\n", home.BrandName(s.TV.Brand), s.TV.IP, nowShowing(t), v.Level, map[bool]string{true: " (muted)"}[v.Muted])
-		return nil
 	}
+	if !slices.Contains(tvCommands, cmd) {
+		return fmt.Errorf("unknown command %q. Run: canape help", "tv "+cmd)
+	}
+	saved, err := s.FindTV(name)
+	if err != nil {
+		return err
+	}
+	brand := home.BrandName(saved.Brand)
 
-	t, err := s.ConnectTV()
+	t, err := s.ConnectTV(name)
 	if err != nil {
 		return err
 	}
@@ -147,9 +185,30 @@ func tvCommand(cmd string, args []string) error {
 		return fmt.Errorf("unknown command %q. Run: canape help", "tv "+cmd)
 	}
 	if errors.Is(err, tv.ErrUnsupported) {
-		return fmt.Errorf("%s TVs can't do %q", home.BrandName(s.TV.Brand), cmd)
+		return fmt.Errorf("%s TVs can't do %q", brand, cmd)
 	}
 	return err
+}
+
+// tvStatus prints one line about a paired TV, on or off.
+func tvStatus(s *home.Here, name string) {
+	saved, _ := s.FindTV(name)
+	label := fmt.Sprintf("%s TV at %s", home.BrandName(saved.Brand), saved.IP)
+	if len(s.TVs) > 1 {
+		label = saved.Name + ": " + label
+	}
+	t, err := s.ConnectTV(name)
+	if err != nil {
+		fmt.Printf("%s: off or unreachable. Turn it on with: %s\n", label, s.TVCommand(saved.Name, "on"))
+		return
+	}
+	defer t.Close()
+	v, err := t.Volume()
+	if err != nil {
+		fmt.Printf("%s: on%s\n", label, nowShowing(t))
+		return
+	}
+	fmt.Printf("%s: on%s, volume %d%s\n", label, nowShowing(t), v.Level, map[bool]string{true: " (muted)"}[v.Muted])
 }
 
 // nowShowing names what's on screen, e.g. ", showing Apple", or "" if unknown.
@@ -235,53 +294,66 @@ func tvApp(t tv.TV, args []string) error {
 	return nil
 }
 
-// pairTV finds a TV and pairs it, saying what happens along the way. When
-// none answers, it names the TVs canape found but can't control yet.
-func pairTV(h *home.Here, indent string) (tv.TV, error) {
-	fmt.Print(indent + "Looking for a TV... ")
-	t, err := h.PairTV(func(brand, ip string) {
-		fmt.Printf("found the %s TV at %s\n", brand, ip)
+// pairTVs pairs the TVs canape finds and hasn't saved yet, saying what
+// happens along the way. When none answers, it names the TVs canape found
+// but can't control yet.
+func pairTVs(h *home.Here, in lineReader, indent string) ([]store.TV, error) {
+	fmt.Println(indent + "Looking for TVs...")
+	paired, err := h.PairTVs(func(brand, ip string) {
+		fmt.Printf("%sFound an %s TV at %s.\n", indent, brand, ip)
 	}, func() {
 		fmt.Println(indent + "Accept canape on the TV screen (you have 60 seconds)...")
+	}, func(suggested string) string {
+		return prompt(in, indent+"What do you call this TV? (projector, bedroom...)", suggested)
 	})
 	if errors.Is(err, home.ErrNoTV) {
-		fmt.Println("none answered.")
+		if len(h.TVs) > 0 {
+			fmt.Println(indent + "No new TV answered.")
+		} else {
+			fmt.Println(indent + "None answered.")
+		}
 		otherTVs(indent)
 	}
-	return t, err
+	for _, t := range paired {
+		fmt.Printf("%sPaired the %s TV as %q.\n", indent, home.BrandName(t.Brand), t.Name)
+		if t.MAC == "" {
+			fmt.Printf("%sCouldn't read its network address, so \"canape tv %s on\" won't work yet.\n", indent, t.Name)
+		}
+	}
+	return paired, err
 }
 
 func pair(s *home.Here) error {
-	t, err := pairTV(s, "")
+	paired, err := pairTVs(s, stdinLines(), "")
+	if errors.Is(err, home.ErrNoTV) && len(s.TVs) > 0 {
+		return nil // the TVs already paired are enough
+	}
 	if err != nil {
 		return err
 	}
-	defer t.Close()
-	fmt.Printf("Paired. Saved in home %q.\n", s.Name)
-	if s.TV.MAC == "" {
-		fmt.Println(`Couldn't read the TV's network address, so "canape tv on" won't work yet. Run canape tv pair again later.`)
+	if len(s.TVs) > 1 {
+		fmt.Printf("Your TVs: %s. Commands go to the one that's on, or name one: canape tv %s app youtube\n", s.TVNames(), paired[0].Name)
 	}
-	t.Notify("canape is paired")
-	fmt.Println(`Try: canape tv notify "hello from the couch"`)
 	return nil
 }
 
 // installApp builds the Wi-Fi QR app and installs it through LG's Developer
 // Mode. The QR is baked in, so it works with canape stopped. Run it again
 // after changing the Wi-Fi password.
-func installApp(s *home.Here) error {
+func installApp(s *home.Here, name string) error {
 	if s.Wifi.SSID == "" {
 		return errors.New("no Wi-Fi saved yet. Run: canape wifi set")
 	}
-	if s.TV.Brand != "" && s.TV.Brand != "lg" {
-		return errors.New("the TV app uses LG's Developer Mode, so it only works on LG TVs. Use canape wifi tv instead")
-	}
-	ip := s.TV.IP
-	if ip == "" {
-		var err error
-		if ip, err = lg.Discover(3 * time.Second); err != nil {
-			return err
+	var ip string
+	if saved, err := s.FindTV(name); err == nil {
+		if saved.Brand != "lg" {
+			return errors.New("the TV app uses LG's Developer Mode, so it only works on LG TVs. Use canape wifi tv instead")
 		}
+		ip = saved.IP
+	} else if name != "" {
+		return err
+	} else if ip, err = lg.Discover(3 * time.Second); err != nil {
+		return err
 	}
 	text := wifi.QRText(s.Wifi.SSID, s.Wifi.Password)
 	app := lg.WebApp{ID: "com.canape.wifi", Title: "Wi-Fi"}

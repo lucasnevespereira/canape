@@ -297,11 +297,13 @@
   <section class="page" id="page-home">
     <h2 class="more-title">All devices</h2>
     <div class="cards">
-      <button class="card" data-go="tv" id="card-tv">
-        <span class="icon"><svg><use href="#i-tv"/></svg></span>
-        <span class="title">TV</span>
-        <span class="sub"><i class="dot"></i><span>Connecting</span></span>
-      </button>
+      <template id="tv-card">
+        <button class="card tv-card">
+          <span class="icon"><svg><use href="#i-tv"/></svg></span>
+          <span class="title">TV</span>
+          <span class="sub"><i class="dot"></i><span>Connecting</span></span>
+        </button>
+      </template>
       <button class="card" data-go="appletv" id="card-atv" hidden>
         <span class="icon"><svg><use href="#i-atv"/></svg></span>
         <span class="title">Apple TV</span>
@@ -326,7 +328,7 @@
   <!-- TV -->
   <section class="page" id="page-tv">
     <div class="bar">
-      <h2>TV</h2><span class="state" id="tv-state"></span>
+      <h2 id="tv-title">TV</h2><span class="state" id="tv-state"></span>
     </div>
 
     <div id="no-tv" class="empty" hidden>
@@ -504,7 +506,7 @@ const $ = (s) => document.querySelector(s);
 const wide = matchMedia("(min-width: 900px)");
 const PAGES = ["home", "tv", "appletv", "computer", "wifi", "network"];
 const APPS_SHOWN = 8;
-const state = { home: null, tv: null, pc: null, devices: null, page: "home", allApps: false, showPassword: false };
+const state = { home: null, tv: null, tvName: "", pc: null, devices: null, page: "home", allApps: false, showPassword: false };
 
 class LoggedOut extends Error {}
 
@@ -544,6 +546,9 @@ function go(page) {
   for (const c of document.querySelectorAll("[data-go]")) {
     if (c.closest("#page-home")) c.setAttribute("aria-current", String(c.dataset.go === page));
   }
+  for (const c of document.querySelectorAll(".tv-card")) {
+    c.setAttribute("aria-current", String(page === "tv" && c.dataset.tv === state.tvName));
+  }
   history.replaceState(null, "", "#" + page);
   if (page !== "home") {
     state.last = page;
@@ -558,7 +563,7 @@ function go(page) {
 // devices than fit, the first ones get tabs and the rest stay in More.
 const MAX_DEVICE_TABS = 4;
 function renderTabs() {
-  const tabs = [{ page: "tv", label: "TV", icon: "i-tv" }];
+  const tabs = (tvs().length ? tvs() : [{ name: "" }]).map((t) => ({ page: "tv", tv: t.name, label: tvTitle(t.name), icon: "i-tv" }));
   if (state.home && state.home.appletv) tabs.push({ page: "appletv", label: "Apple TV", icon: "i-atv" });
   if (state.pc && state.pc.supported) tabs.push({ page: "computer", label: shortName(state.pc.name), icon: "i-computer" });
   tabs.push({ page: "wifi", label: "Wi-Fi", icon: "i-wifi" });
@@ -567,18 +572,23 @@ function renderTabs() {
   $("#tabs").replaceChildren(...shown.map((t) => {
     const b = document.createElement("button");
     b.dataset.page = t.page;
+    if (t.tv !== undefined) b.dataset.tv = t.tv;
     b.innerHTML = `<svg><use href="#${t.icon}"/></svg>`;
     const label = document.createElement("span");
     label.textContent = t.label;
     b.append(label);
-    b.onclick = () => go(t.page);
+    b.onclick = () => {
+      if (t.tv !== undefined) selectTV(t.tv);
+      go(t.page);
+    };
     return b;
   }));
   markTabs();
 }
 function markTabs() {
   for (const b of document.querySelectorAll("#tabs button")) {
-    const current = b.dataset.page === state.page || (state.page === "network" && b.dataset.page === "home");
+    const current = (b.dataset.page === state.page && (b.dataset.tv === undefined || b.dataset.tv === state.tvName)) ||
+      (state.page === "network" && b.dataset.page === "home");
     b.setAttribute("aria-current", current ? "page" : "false");
   }
 }
@@ -606,6 +616,9 @@ async function loadHome() {
   $("#no-wifi").hidden = !!h.ssid;
   $("#wifi").hidden = !h.ssid;
   setCard("#card-wifi", h.ssid || "Not saved yet");
+  if (!tvs().some((t) => t.name === state.tvName)) state.tvName = tvs().length ? tvs()[0].name : "";
+  renderTVCards();
+  selectTV(state.tvName);
   $("#card-atv").hidden = !h.appletv;
   setCard("#card-atv", h.appletv);
   $("#atv-name").textContent = h.appletv;
@@ -625,14 +638,62 @@ function renderPassword() {
 }
 $("#pw-toggle").onclick = () => { state.showPassword = !state.showPassword; renderPassword(); };
 
-// TV
+// TV. A home can have several: the page shows the one picked, by name.
+function tvs() { return (state.home && state.home.tvs) || []; }
+// "TV" while there's one, so a single-TV home never sees names.
+function tvTitle(name) { return tvs().length > 1 && name ? name[0].toUpperCase() + name.slice(1) : "TV"; }
+function tvURL(path, name) { return path + "?tv=" + encodeURIComponent(name === undefined ? state.tvName : name); }
+
+function selectTV(name) {
+  if (name !== state.tvName) {
+    state.tvName = name;
+    state.tv = null;
+    state.allApps = false;
+    try { localStorage.setItem("tv", name); } catch (e) {}
+    refreshTV();
+  }
+  $("#tv-title").textContent = tvTitle(name);
+  markTabs();
+}
+
+function renderTVCards() {
+  for (const c of document.querySelectorAll(".tv-card")) c.remove();
+  for (const t of tvs().length ? tvs() : [{ name: "" }]) {
+    const card = $("#tv-card").content.firstElementChild.cloneNode(true);
+    card.dataset.tv = t.name;
+    card.querySelector(".title").textContent = tvTitle(t.name);
+    card.onclick = () => { selectTV(t.name); go("tv"); };
+    $("#card-atv").before(card);
+  }
+}
+
+function setTVCard(name, sub, on) {
+  for (const c of document.querySelectorAll(".tv-card")) {
+    if (c.dataset.tv !== name) continue;
+    c.classList.toggle("on", !!on);
+    c.querySelector(".sub span:last-child").textContent = sub;
+  }
+}
+
 async function refreshTV() {
   if (!state.home) return;
-  if (!state.home.tv) return showTV("none");
-  try {
-    state.tv = await api("/api/tv");
-  } catch (e) { return fail(e); }
-  showTV(state.tv.on ? "on" : "off");
+  if (!tvs().length) return showTV("none");
+  await Promise.all(tvs().map(async (t) => {
+    let st;
+    try {
+      st = await api(tvURL("/api/tv", t.name));
+    } catch (e) {
+      if (t.name === state.tvName) fail(e);
+      return;
+    }
+    if (t.name === state.tvName) {
+      state.tv = st;
+      showTV(st.on ? "on" : "off");
+    } else {
+      const now = st.on ? nowShowing(st) : "";
+      setTVCard(t.name, st.on ? (now ? "On, " + now : "On") : "Off", st.on);
+    }
+  }));
 }
 
 function showTV(mode) {
@@ -643,7 +704,7 @@ function showTV(mode) {
   if (mode === "on") renderTV();
   const now = mode === "on" ? nowShowing() : "";
   const sub = { none: "Not paired", off: "Off", on: now ? "On, " + now : "On" }[mode];
-  setCard("#card-tv", sub, mode === "on");
+  setTVCard(state.tvName, sub, mode === "on");
   // When on, "Showing ..." already says it.
   $("#tv-state").textContent = mode === "on" ? "" : sub;
 }
@@ -653,8 +714,7 @@ function visibleInputs(tv) {
   return tv.inputs.filter((i) => i.connected || i.id === tv.current || !/^HDMI \d+$/i.test(i.label));
 }
 
-function nowShowing() {
-  const tv = state.tv;
+function nowShowing(tv = state.tv) {
   const now = tv.inputs.find((i) => i.id === tv.current) || tv.apps.find((a) => a.id === tv.current);
   return now ? now.label || now.title : "";
 }
@@ -711,7 +771,7 @@ function initials(title) {
 }
 
 async function act(path, body) {
-  try { await api(path, body); } catch (e) { fail(e); }
+  try { await api(tvURL(path), body); } catch (e) { fail(e); }
   refreshTV();
 }
 
@@ -720,7 +780,7 @@ let keyBusy = false;
 async function pressKey(key) {
   if (keyBusy) return;
   keyBusy = true;
-  try { await api("/api/tv/key", { key }); } catch (e) { fail(e); }
+  try { await api(tvURL("/api/tv/key"), { key }); } catch (e) { fail(e); }
   keyBusy = false;
 }
 
@@ -731,7 +791,7 @@ function nudgeVolume(delta) {
   state.tv.volume = Math.max(0, Math.min(100, state.tv.volume + delta));
   $("#vol").textContent = state.tv.volume;
   clearTimeout(volTimer);
-  volTimer = setTimeout(() => api("/api/tv/volume", { volume: state.tv.volume }).catch(fail), 250);
+  volTimer = setTimeout(() => api(tvURL("/api/tv/volume"), { volume: state.tv.volume }).catch(fail), 250);
 }
 
 // Hold to repeat, like a real remote. Keyboard activation fires once.
@@ -755,7 +815,7 @@ holdable($("#vol-down"), () => nudgeVolume(-1));
 
 $("#mute").onclick = () => act("/api/tv/mute", { mute: !state.tv.muted });
 $("#power-off").onclick = async () => {
-  try { await api("/api/tv/power", { on: false }); toast("TV off"); } catch (e) { fail(e); }
+  try { await api(tvURL("/api/tv/power"), { on: false }); toast("TV off"); } catch (e) { fail(e); }
   setTimeout(refreshTV, 1500);
 };
 $("#power-on").onclick = async () => {
@@ -763,7 +823,7 @@ $("#power-on").onclick = async () => {
   btn.disabled = true;
   btn.querySelector("span").textContent = "Turning on…";
   try {
-    await api("/api/tv/power", { on: true });
+    await api(tvURL("/api/tv/power"), { on: true });
     // The TV takes a few seconds to wake its network.
     for (let i = 0; i < 10 && !(state.tv && state.tv.on); i++) {
       await new Promise((r) => setTimeout(r, 2000));
@@ -787,14 +847,14 @@ $("#type-form").onsubmit = async (e) => {
   const text = $("#type-text").value;
   if (!text) return;
   try {
-    await api("/api/tv/type", { text });
+    await api(tvURL("/api/tv/type"), { text });
     $("#type-text").value = "";
     toast("Sent to the TV");
   } catch (err) { fail(err); }
 };
 
 $("#wifi-tv").onclick = async () => {
-  try { await api("/api/wifi/tv", {}); toast("The Wi-Fi QR is on the TV"); } catch (e) { fail(e); }
+  try { await api(tvURL("/api/wifi/tv"), {}); toast("The Wi-Fi QR is on the TV"); } catch (e) { fail(e); }
 };
 
 // The computer canape runs on, usually the one streaming to the TV.
@@ -923,7 +983,10 @@ document.addEventListener("keydown", (e) => {
 });
 
 // Open where the user left off: the remote is one tap away at most.
-try { state.last = localStorage.getItem("page"); } catch (e) {}
+try {
+  state.last = localStorage.getItem("page");
+  state.tvName = localStorage.getItem("tv") || "";
+} catch (e) {}
 const hash = location.hash.slice(1);
 renderTabs();
 go(PAGES.includes(hash) ? hash : state.last || "tv");

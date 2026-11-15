@@ -26,6 +26,7 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - [x] The network report: bare `canape` shows the Wi-Fi (band, signal, security), the box, whether the internet works, and every device grouped by kind, then what to do next. Works without router access
 - [x] A moved TV is found again, setup names TVs it can't control yet
 - [x] Android TVs and projectors over ADB: power off, volume, keys, typing, apps, web pages
+- [x] Several TVs per home, by name. Commands go to the one that's on
 - [x] `canape version`, releases with binaries, Homebrew updated automatically
 
 ## Still to check on real hardware
@@ -40,6 +41,8 @@ Someone who has never heard of an IP address should be able to use canape. That 
 - `install.sh` on a Raspberry Pi (only run on a Mac so far)
 - The network report with a VPN on (it should still run, without a home)
 - The network report on a network without router access (a friend's box, a hotel), and on Linux where the Wi-Fi line is empty for now
+- The dashboard with two TVs: cards, phone tabs, switching between them (API checked, page not opened yet)
+- Two TVs of the same brand in one home: pairing finds one per brand per run
 - Android TV: typing, opening a URL, standby and Wake-on-LAN, finding it again after an IP change, pairing from `canape setup`, an Android 10 TV (volume reading)
 
 ## Next

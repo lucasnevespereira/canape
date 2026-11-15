@@ -74,8 +74,8 @@ func listHomes(h *home.Here) error {
 		}
 		fmt.Printf("%s%s\n", hm.Name, here)
 		var parts []string
-		if hm.TV.Key != "" {
-			parts = append(parts, home.BrandName(hm.TV.Brand)+" TV")
+		for _, t := range hm.TVs {
+			parts = append(parts, t.Name+" ("+home.BrandName(t.Brand)+" TV)")
 		}
 		if hm.Freebox.AppToken != "" {
 			parts = append(parts, "Freebox")

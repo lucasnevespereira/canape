@@ -34,21 +34,16 @@ func setup() error {
 		}
 	}
 
-	fmt.Println("\n1. TV")
-	if h.TV.Key != "" {
-		fmt.Printf("   %s at %s, already paired.\n", home.BrandName(h.TV.Brand), h.TV.IP)
-	} else {
-		t, err := pairTV(h, "   ")
-		switch {
-		case errors.Is(err, home.ErrNoTV):
-			fmt.Println("   Skipped. If your TV is off, turn it on and run canape setup again.")
-		case err != nil:
-			fmt.Printf("   %v\n   Skipped. Try again with: canape tv pair\n", err)
-		default:
-			t.Notify("canape is paired")
-			t.Close()
-			fmt.Println("   Paired.")
-		}
+	fmt.Println("\n1. TVs")
+	for _, t := range h.TVs {
+		fmt.Printf("   %s (%s at %s), already paired.\n", t.Name, home.BrandName(t.Brand), t.IP)
+	}
+	switch _, err := pairTVs(h, in, "   "); {
+	case errors.Is(err, home.ErrNoTV) && len(h.TVs) == 0:
+		fmt.Println("   Skipped. If your TV is off, turn it on and run canape setup again.")
+	case errors.Is(err, home.ErrNoTV):
+	case err != nil:
+		fmt.Printf("   %v\n   Skipped. Try again with: canape tv pair\n", err)
 	}
 
 	fmt.Println("\n2. Apple TV")

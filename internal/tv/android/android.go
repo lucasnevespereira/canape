@@ -191,6 +191,7 @@ var titles = map[string]string{
 	"com.spotify.tv.android":            "Spotify",
 	"com.android.vending":               "Play Store",
 	"com.android.tv.settings":           "Settings",
+	"com.spocky.projengmenu":            "Projectivy Launcher",
 }
 
 func title(pkg string) string {

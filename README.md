@@ -65,7 +65,7 @@ On a new network, start with `canape setup`. Run `canape scan` when you're curio
 
 ## What it does
 
-- **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins.
+- **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins. A TV in the living room and a projector in the bedroom? Pair both and give them names. Commands go to the one that's on, or name one: `canape tv projector app netflix`.
 - **Apple TV:** play, pause, skip, the remote's arrows and buttons, from your phone or the terminal. Pairs once with the code on its screen.
 - **The computer streaming to the TV:** play, pause, skip back or ahead, volume and full screen on the Mac canape runs on, from your phone. No getting up to pause the movie.
 - **Wi-Fi QR code:** in the terminal, on the TV, or on your phone. Guests scan it and join. canape reads the network name from the router and you type the password once. It never changes your router's settings.
@@ -176,9 +176,9 @@ For Claude Desktop, add this to its config (Settings → Developer → Edit Conf
 { "mcpServers": { "canape": { "command": "/opt/homebrew/bin/canape", "args": ["mcp"] } } }
 ```
 
-Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
+Then ask: "put YouTube on the TV", "volume 15 on the projector", "show the Wi-Fi QR on the TV", "who's on the network?".
 
-Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `appletv_key`, `appletv_skip`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
+Tools: `tv_list`, `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `appletv_key`, `appletv_skip`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Several homes
 

@@ -208,10 +208,17 @@ func homeInfo(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
+	type tvInfo struct {
+		Name  string `json:"name"`
+		Brand string `json:"brand"`
+	}
+	tvs := []tvInfo{}
+	for _, t := range h.TVs {
+		tvs = append(tvs, tvInfo{t.Name, home.BrandName(t.Brand)})
+	}
 	writeJSON(w, map[string]any{
 		"name":     h.Name,
-		"tv":       h.TV.Key != "",
-		"tvBrand":  home.BrandName(h.TV.Brand),
+		"tvs":      tvs,
 		"appletv":  appleTVName(h),
 		"router":   h.Freebox.AppToken != "",
 		"ssid":     h.Wifi.SSID,
@@ -364,7 +371,11 @@ func (sv *server) tvStatus(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	t, err := h.ConnectTV()
+	if _, err := h.FindTV(tvName(r)); err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	t, err := h.ConnectTV(tvName(r))
 	if err != nil {
 		// Off and unreachable look the same from here. The page offers power on.
 		writeJSON(w, home.TVStatus{})
@@ -394,7 +405,7 @@ func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {
 	}
 	h, err := home.Load()
 	if err == nil {
-		err = h.WakeTV()
+		err = h.WakeTV(tvName(r))
 	}
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err)
@@ -402,6 +413,10 @@ func (sv *server) tvPower(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, map[string]bool{"ok": true})
 }
+
+// tvName is the TV a request is for, from ?tv=. The page always sends it,
+// so a home with several TVs never guesses.
+func tvName(r *http.Request) string { return r.URL.Query().Get("tv") }
 
 // tvHandler decodes the JSON body into T, connects to the TV and runs fn. An
 // empty or already-read body leaves T at its zero value.
@@ -419,7 +434,7 @@ func tvHandler[T any](sv *server, fn func(tv.TV, T) error) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
-		t, err := h.ConnectTV()
+		t, err := h.ConnectTV(tvName(r))
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err)
 			return

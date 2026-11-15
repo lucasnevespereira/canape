@@ -22,7 +22,7 @@ func TestLoadKeepsPreHomesFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Legacy == nil || s.Legacy.TV.Key != "k" || s.Legacy.Wifi.SSID != "Net" || s.Legacy.Freebox.AppToken != "t" {
+	if s.Legacy == nil || len(s.Legacy.TVs) != 1 || s.Legacy.TVs[0].Key != "k" || s.Legacy.TVs[0].Name != "tv" || s.Legacy.Wifi.SSID != "Net" || s.Legacy.Freebox.AppToken != "t" {
 		t.Fatalf("legacy home not recovered: %+v", s.Legacy)
 	}
 	if s.Dashboard.Key != "d" || len(s.Homes) != 0 {
@@ -38,7 +38,7 @@ func TestLoadKeepsPreHomesFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Legacy != nil || s.Homes["router"].TV.Key != "k" {
+	if s.Legacy != nil || s.Homes["router"].TVs[0].Key != "k" {
 		t.Fatalf("after save: legacy=%v homes=%+v", s.Legacy, s.Homes)
 	}
 }
@@ -71,5 +71,26 @@ func TestLoadMovesOldLocation(t *testing.T) {
 	}
 	if _, err := os.Stat(old); !os.IsNotExist(err) {
 		t.Fatalf("old file still there: %v", err)
+	}
+}
+
+// A home saved with one TV comes back with it as the first of its TVs.
+func TestLoadMovesSingleTV(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", "")
+	if err := os.MkdirAll(filepath.Dir(Path()), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	b := `{"homes":{"r":{"name":"home","tv":{"brand":"lg","ip":"192.0.2.20","key":"k"}}}}`
+	if err := os.WriteFile(Path(), []byte(b), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := s.Homes["r"]
+	if h.OldTV != nil || len(h.TVs) != 1 || h.TVs[0].Name != "tv" || h.TVs[0].Key != "k" {
+		t.Fatalf("got %+v", h)
 	}
 }
