@@ -378,7 +378,7 @@
         <button class="btn primary" type="submit">Send</button>
       </form>
 
-      <h3>Inputs</h3>
+      <h3 id="inputs-title">Inputs</h3>
       <div class="segmented" id="inputs"></div>
       <h3><span>Apps</span><button class="link" id="apps-toggle" hidden></button></h3>
       <div class="apps" id="apps"></div>
@@ -641,7 +641,12 @@ $("#pw-toggle").onclick = () => { state.showPassword = !state.showPassword; rend
 // TV. A home can have several: the page shows the one picked, by name.
 function tvs() { return (state.home && state.home.tvs) || []; }
 // "TV" while there's one, so a single-TV home never sees names.
-function tvTitle(name) { return tvs().length > 1 && name ? name[0].toUpperCase() + name.slice(1) : "TV"; }
+function tvTitle(name) {
+  if (tvs().length < 2 || !name) return "TV";
+  const words = name.split("-").map((w) => (w.toLowerCase() === "tv" ? "TV" : w));
+  const title = words.join(" ");
+  return title[0].toUpperCase() + title.slice(1);
+}
 function tvURL(path, name) { return path + "?tv=" + encodeURIComponent(name === undefined ? state.tvName : name); }
 
 function selectTV(name) {
@@ -724,7 +729,10 @@ function renderTV() {
   $("#vol").textContent = tv.volume;
   $("#mute").setAttribute("aria-pressed", String(tv.muted));
 
-  $("#inputs").replaceChildren(...visibleInputs(tv).map((i) => {
+  // Projectors and Android TVs often have no inputs canape can switch.
+  const inputs = visibleInputs(tv);
+  $("#inputs-title").hidden = $("#inputs").hidden = !inputs.length;
+  $("#inputs").replaceChildren(...inputs.map((i) => {
     const b = document.createElement("button");
     b.textContent = i.label;
     b.setAttribute("aria-current", String(i.id === tv.current));

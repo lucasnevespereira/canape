@@ -87,3 +87,17 @@ func TestParseMusic(t *testing.T) {
 		t.Errorf("got %d/%d muted=%v ok=%v", level, top, muted, ok)
 	}
 }
+
+func TestTitle(t *testing.T) {
+	for pkg, want := range map[string]string{
+		"com.netflix.ninja":           "Netflix",
+		"com.viki.android":            "Viki",
+		"com.crunchyroll.crunchyroid": "Crunchyroll",
+		"com.xgimi.filemanager":       "File Manager",
+		"com.impresa.opta":            "Impresa",
+	} {
+		if got := title(pkg); got != want {
+			t.Errorf("title(%s) = %s, want %s", pkg, got, want)
+		}
+	}
+}

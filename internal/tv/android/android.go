@@ -157,8 +157,7 @@ func (t *TV) SwitchInput(id string) error { return tv.ErrUnsupported }
 func (t *TV) Notify(message string) error { return tv.ErrUnsupported }
 
 // Apps lists what the TV launcher shows: apps with a Leanback launcher
-// activity. The shell can't read app labels, so known ones get a title and
-// the rest show their package name.
+// activity. The shell can't read app labels, so title guesses them.
 func (t *TV) Apps() ([]tv.App, error) {
 	out, err := t.shell("cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LEANBACK_LAUNCHER")
 	if err != nil {
@@ -179,24 +178,45 @@ func (t *TV) Apps() ([]tv.App, error) {
 }
 
 var titles = map[string]string{
-	"com.google.android.youtube.tv":     "YouTube",
-	"com.teamsmart.videomanager.tv":     "SmartTube",
-	"com.netflix.ninja":                 "Netflix",
-	"com.amazon.amazonvideo.livingroom": "Prime Video",
-	"com.disney.disneyplus":             "Disney+",
-	"com.canal.android.canal":           "myCANAL",
-	"com.plexapp.android":               "Plex",
-	"org.xbmc.kodi":                     "Kodi",
-	"org.videolan.vlc":                  "VLC",
-	"com.spotify.tv.android":            "Spotify",
-	"com.android.vending":               "Play Store",
-	"com.android.tv.settings":           "Settings",
-	"com.spocky.projengmenu":            "Projectivy Launcher",
+	"com.google.android.youtube.tv":      "YouTube",
+	"com.google.android.youtube.tvmusic": "YouTube Music",
+	"com.teamsmart.videomanager.tv":      "SmartTube",
+	"com.netflix.ninja":                  "Netflix",
+	"com.amazon.amazonvideo.livingroom":  "Prime Video",
+	"com.disney.disneyplus":              "Disney+",
+	"com.canal.android.canal":            "myCANAL",
+	"fr.m6.m6replay":                     "M6+",
+	"fr.tf1.mytf1":                       "TF1+",
+	"tv.arte.plus7":                      "ARTE",
+	"net.oqee.androidtv.store":           "OQEE",
+	"com.plexapp.android":                "Plex",
+	"org.xbmc.kodi":                      "Kodi",
+	"org.videolan.vlc":                   "VLC",
+	"com.spotify.tv.android":             "Spotify",
+	"tv.twitch.android.app":              "Twitch",
+	"com.kocowa.android.tv":              "Kocowa+",
+	"com.google.android.videos":          "Google TV",
+	"com.google.android.play.games":      "Play Games",
+	"com.android.vending":                "Play Store",
+	"com.android.tv.settings":            "Settings",
+	"com.spocky.projengmenu":             "Projectivy Launcher",
+	"com.xgimi.filemanager":              "File Manager",
+	"com.xgimi.atmosphere":               "Ambient Light",
 }
 
+// generic are package name words that never name an app.
+var generic = map[string]bool{"com": true, "org": true, "net": true, "fr": true, "pt": true, "tv": true, "android": true, "androidtv": true, "app": true, "apps": true, "google": true, "store": true, "mobile": true}
+
+// title names an app for people: a known title, or the first telling word
+// of its package, so com.viki.android reads "Viki" and not the package.
 func title(pkg string) string {
 	if t, ok := titles[pkg]; ok {
 		return t
+	}
+	for _, w := range strings.Split(pkg, ".") {
+		if !generic[w] && w != "" {
+			return strings.ToUpper(w[:1]) + w[1:]
+		}
 	}
 	return pkg
 }
