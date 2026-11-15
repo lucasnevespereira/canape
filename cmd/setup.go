@@ -34,21 +34,16 @@ func setup() error {
 		}
 	}
 
-	fmt.Println("\n1. TV")
-	if h.TV.Key != "" {
-		fmt.Printf("   %s at %s, already paired.\n", home.BrandName(h.TV.Brand), h.TV.IP)
-	} else {
-		t, err := pairTV(h, "   ")
-		switch {
-		case errors.Is(err, home.ErrNoTV):
-			fmt.Println("   Skipped. If your TV is off, turn it on and run canape setup again.")
-		case err != nil:
-			fmt.Printf("   %v\n   Skipped. Try again with: canape tv pair\n", err)
-		default:
-			t.Notify("canape is paired")
-			t.Close()
-			fmt.Println("   Paired.")
-		}
+	fmt.Println("\n1. TVs")
+	for _, t := range h.TVs {
+		fmt.Printf("   %s (%s at %s), already paired.\n", t.Name, home.BrandName(t.Brand), t.IP)
+	}
+	switch _, err := pairTVs(h, in, "   "); {
+	case errors.Is(err, home.ErrNoTV) && len(h.TVs) == 0:
+		fmt.Println("   Skipped. If your TV is off, turn it on and run canape setup again.")
+	case errors.Is(err, home.ErrNoTV):
+	case err != nil:
+		fmt.Printf("   %v\n   Skipped. Try again with: canape tv pair\n", err)
 	}
 
 	fmt.Println("\n2. Apple TV")
@@ -116,7 +111,10 @@ func otherTVs(indent string) {
 	}
 	for _, d := range res.Devices {
 		switch k := d.Kind(); k {
-		case "Samsung TV", "Sony TV", "Android TV / Google Cast", "Freebox Player":
+		case "Android TV / Google Cast":
+			fmt.Printf("%sFound an Android TV or Google Cast device at %s.\n", indent, d.IP)
+			fmt.Printf("%sIf it runs Android TV, turn on network debugging to control it: docs/android.md\n", indent)
+		case "Samsung TV", "Sony TV", "Freebox Player":
 			fmt.Printf("%sFound a %s at %s. canape can't control it yet.\n", indent, k, d.IP)
 			fmt.Printf("%sWant to help add it? See docs/adding-a-tv.md\n", indent)
 		}

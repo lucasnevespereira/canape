@@ -30,6 +30,11 @@ TV
   canape tv type [text]        type into the selected text field (asks if no text)
   canape tv notify <message>   show a message on the TV
 
+  Several TVs? Commands go to the one that's on. Name one to pick it:
+  canape tv projector app youtube
+  canape tv <name> rename <new>  call a TV something else
+  canape tv <name> forget      remove a TV from this home
+
 Apple TV
   canape appletv pair          pair it once, with the code on its screen (setup does it too)
   canape appletv play | pause  play or pause
@@ -71,7 +76,7 @@ Run
   canape version               which canape this is
 
 Advanced
-  canape tv pair               pair a TV again (setup does it the first time)
+  canape tv pair               pair a new TV (setup does it the first time)
   canape freebox pair          pair the Freebox again
   canape tv install-app        install a Wi-Fi QR app on an LG TV (needs Developer Mode)
   canape tv call <uri> [json]  raw LG request, e.g. canape tv call audio/getVolume
@@ -96,10 +101,7 @@ func Run(args []string) int {
 	case "setup":
 		err = setup()
 	case "tv":
-		if len(rest) == 0 {
-			rest = []string{"status"}
-		}
-		err = tvCommand(rest[0], rest[1:])
+		err = tvCommand(rest)
 	case "appletv", "atv":
 		err = appleTVCommand(rest)
 	case "wifi":

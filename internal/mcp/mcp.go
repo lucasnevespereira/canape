@@ -26,6 +26,11 @@ type reply struct {
 
 type nameInput struct {
 	Name string `json:"name" jsonschema:"name as listed by tv_status. Loose matching works, e.g. hdmi1, apple, youtube"`
+	TV   string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
+}
+
+type tvOnly struct {
+	TV string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 }
 
 // Run serves the CLI's functions as MCP tools over stdio.
@@ -36,18 +41,34 @@ func Run() error {
 	readOnly := &sdk.ToolAnnotations{ReadOnlyHint: true}
 
 	sdk.AddTool(s, &sdk.Tool{
+		Name:        "tv_list",
+		Description: "The TVs paired on this network, by name. The first is used when a TV tool gets no name.",
+		Annotations: readOnly,
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, _ struct{}) (*sdk.CallToolResult, tvList, error) {
+		s, err := home.Load()
+		if err != nil {
+			return nil, tvList{}, err
+		}
+		var out tvList
+		for _, t := range s.TVs {
+			out.TVs = append(out.TVs, tvEntry{Name: t.Name, Brand: home.BrandName(t.Brand)})
+		}
+		return nil, out, nil
+	})
+
+	sdk.AddTool(s, &sdk.Tool{
 		Name:        "tv_status",
 		Description: "Whether the TV is on, its volume, what's on screen, and its inputs and apps. Call it to learn input and app names.",
 		Annotations: readOnly,
-	}, func(ctx context.Context, _ *sdk.CallToolRequest, _ struct{}) (*sdk.CallToolResult, home.TVStatus, error) {
+	}, func(ctx context.Context, _ *sdk.CallToolRequest, in tvOnly) (*sdk.CallToolResult, home.TVStatus, error) {
 		s, err := home.Load()
 		if err != nil {
 			return nil, home.TVStatus{}, err
 		}
-		if s.TV.Key == "" {
-			return nil, home.TVStatus{}, errors.New("no TV is paired on this network. The user can pair one with: canape setup")
+		if _, err := s.FindTV(in.TV); err != nil {
+			return nil, home.TVStatus{}, err
 		}
-		t, err := s.ConnectTV()
+		t, err := s.ConnectTV(in.TV)
 		if err != nil {
 			return nil, home.TVStatus{}, nil // off or unreachable: on=false
 		}
@@ -58,37 +79,40 @@ func Run() error {
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_power", Description: "Turn the TV on or off."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
-			On bool `json:"on" jsonschema:"true to turn on, false to turn off"`
+			On bool   `json:"on" jsonschema:"true to turn on, false to turn off"`
+			TV string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
 			if in.On {
 				s, err := home.Load()
 				if err != nil {
 					return nil, reply{}, err
 				}
-				return nil, reply{"Wake-on-LAN sent. The TV takes a few seconds to start."}, s.WakeTV()
+				return nil, reply{"Wake-on-LAN sent. The TV takes a few seconds to start."}, s.WakeTV(in.TV)
 			}
-			return withTV(func(t tv.TV) (string, error) { return "TV off.", t.TurnOff() })
+			return withTV(in.TV, func(t tv.TV) (string, error) { return "TV off.", t.TurnOff() })
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_volume", Description: "Set the TV volume."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
-			Level int `json:"level" jsonschema:"volume from 0 to 100"`
+			Level int    `json:"level" jsonschema:"volume from 0 to 100"`
+			TV    string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) {
+			return withTV(in.TV, func(t tv.TV) (string, error) {
 				return fmt.Sprintf("Volume set to %d.", in.Level), t.SetVolume(in.Level)
 			})
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_mute", Description: "Mute or unmute the TV."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
-			Mute bool `json:"mute" jsonschema:"true to mute, false to unmute"`
+			Mute bool   `json:"mute" jsonschema:"true to mute, false to unmute"`
+			TV   string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) { return "Done.", t.SetMute(in.Mute) })
+			return withTV(in.TV, func(t tv.TV) (string, error) { return "Done.", t.SetMute(in.Mute) })
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_input", Description: "Switch the TV to an HDMI input, e.g. the Apple TV or a console."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in nameInput) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) {
+			return withTV(in.TV, func(t tv.TV) (string, error) {
 				inputs, err := t.Inputs()
 				if err != nil {
 					return "", err
@@ -107,7 +131,7 @@ func Run() error {
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_launch_app", Description: "Open an app on the TV, e.g. YouTube or Prime Video."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in nameInput) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) {
+			return withTV(in.TV, func(t tv.TV) (string, error) {
 				apps, err := t.Apps()
 				if err != nil {
 					return "", err
@@ -127,37 +151,41 @@ func Run() error {
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_open_url", Description: "Open a web page in the TV's browser."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
 			URL string `json:"url" jsonschema:"http or https URL"`
+			TV  string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) { return "Opened " + in.URL + ".", t.Open(in.URL) })
+			return withTV(in.TV, func(t tv.TV) (string, error) { return "Opened " + in.URL + ".", t.Open(in.URL) })
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_press_key", Description: "Press a remote key on the TV."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
 			Key string `json:"key" jsonschema:"one of HOME, BACK, UP, DOWN, LEFT, RIGHT, ENTER (ENTER is the OK key)"`
+			TV  string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
 			key := strings.ToUpper(in.Key)
 			if !slices.Contains(tv.Keys, key) {
 				return nil, reply{}, fmt.Errorf("unknown key %q", in.Key)
 			}
-			return withTV(func(t tv.TV) (string, error) { return "Pressed " + key + ".", t.Key(key) })
+			return withTV(in.TV, func(t tv.TV) (string, error) { return "Pressed " + key + ".", t.Key(key) })
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_type_text", Description: "Type text into the text field selected on the TV, like a search box."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
 			Text string `json:"text"`
+			TV   string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) { return "Typed.", t.Type(in.Text) })
+			return withTV(in.TV, func(t tv.TV) (string, error) { return "Typed.", t.Type(in.Text) })
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "tv_notify", Description: "Show a short notification on the TV screen."},
 		func(ctx context.Context, _ *sdk.CallToolRequest, in struct {
 			Message string `json:"message"`
+			TV      string `json:"tv,omitempty" jsonschema:"which TV, by its name from tv_list. Leave empty when there is only one"`
 		}) (*sdk.CallToolResult, reply, error) {
-			return withTV(func(t tv.TV) (string, error) { return "Shown on the TV.", t.Notify(in.Message) })
+			return withTV(in.TV, func(t tv.TV) (string, error) { return "Shown on the TV.", t.Notify(in.Message) })
 		})
 
 	sdk.AddTool(s, &sdk.Tool{Name: "wifi_show_on_tv", Description: "Show the home Wi-Fi QR code full screen on the TV so guests can scan it."},
-		func(ctx context.Context, _ *sdk.CallToolRequest, _ struct{}) (*sdk.CallToolResult, reply, error) {
+		func(ctx context.Context, _ *sdk.CallToolRequest, in tvOnly) (*sdk.CallToolResult, reply, error) {
 			s, err := home.Load()
 			if err != nil {
 				return nil, reply{}, err
@@ -165,7 +193,7 @@ func Run() error {
 			if s.Wifi.SSID == "" {
 				return nil, reply{}, errors.New("no Wi-Fi saved yet. The user has to run: canape wifi set")
 			}
-			return withTV(func(t tv.TV) (string, error) {
+			return withTV(in.TV, func(t tv.TV) (string, error) {
 				return "The Wi-Fi QR is on the TV. Back on the remote closes it.",
 					wifi.ShowOnTV(s.Wifi.SSID, s.Wifi.Password, discovery.LocalIP(), t.Open)
 			})
@@ -248,13 +276,22 @@ func Run() error {
 	return s.Run(context.Background(), &sdk.StdioTransport{})
 }
 
-// withTV connects to the paired TV for one tool call.
-func withTV(fn func(tv.TV) (string, error)) (*sdk.CallToolResult, reply, error) {
+type tvEntry struct {
+	Name  string `json:"name"`
+	Brand string `json:"brand"`
+}
+
+type tvList struct {
+	TVs []tvEntry `json:"tvs"`
+}
+
+// withTV connects to the TV called name ("" for the first) for one tool call.
+func withTV(name string, fn func(tv.TV) (string, error)) (*sdk.CallToolResult, reply, error) {
 	s, err := home.Load()
 	if err != nil {
 		return nil, reply{}, err
 	}
-	t, err := s.ConnectTV()
+	t, err := s.ConnectTV(name)
 	if err != nil {
 		return nil, reply{}, err
 	}

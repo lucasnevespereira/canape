@@ -18,12 +18,13 @@ Who it's for: someone who has never heard of an IP address. Plain words, every p
 - In: more TV brands, Chromecast. "What's this device?" and new-device alerts. Waking a computer. Router speed and status. Named scenes ("movie mode"). Handing lights and sensors to an existing Home Assistant.
 - Out: automations ("when X, do Y"), history and graphs, a plugin marketplace, anything that needs a 24/7 server, writing router settings. That's Home Assistant's job.
 
-Supported today: LG webOS TVs, Apple TV, Freebox routers. Protocol notes live in `docs/` (lg.md, appletv.md, freebox.md, discovery.md). Read the one for the device you touch before changing its code.
+Supported today: LG webOS TVs, Android TVs, Apple TV, Freebox routers. Protocol notes live in `docs/` (lg.md, android.md, appletv.md, freebox.md, discovery.md). Read the one for the device you touch before changing its code.
 
 ## Decisions and why
 
 - **Runs inside the network, never on a VPS.** TVs only take commands from the LAN, and Wake-on-LAN is a LAN broadcast. Remote access is Tailscale's job.
 - **One home per network, keyed by the router's MAC.** `home.Load()` reads the default gateway's MAC from the ARP table (no permission needed, while recent macOS hides the Wi-Fi name from CLI tools) and returns that network's home. A new network gets an in-memory home, saved only once something is paired or `canape setup` runs, so read commands never add entries. Nothing ever overwrites another home. A pre-homes `state.json` migrates into a home named "home". When the MAC can't be read (often a VPN), `home.Load` returns `ErrUnknownNetwork`: the report runs without a home, other commands say why they can't.
+- **Several TVs per home, named in plain words.** `store.Home.TVs` is a list. Pairing asks a name ("projector") and suggests `tv`, `tv-2`. A command without a name goes to the first TV that answers (`ConnectTV("")`), since people rarely watch two at once. With one TV, names never show: `TVCommand` drops them from hints and the dashboard says "TV". The CLI takes a name as the first word after `tv` when it isn't a command, the dashboard sends `?tv=`, MCP tools take an optional `tv`. A home saved with one `tv` migrates on load (`store.Home.OldTV`).
 - **TV brands behind one interface.** `tv.TV` is what canape does with any TV. A brand is a driver package under `internal/tv/` plus one entry in `internal/home/drivers.go`. Unsupported actions return `tv.ErrUnsupported`. Wake-on-LAN is shared (`tv.Wake`). Brand-only extras stay in the driver (`lg.TV.Call`, the LG Developer Mode app). Routers aren't abstracted: only the Freebox exists. How to add a brand: `docs/adding-a-tv.md`.
 - **Apple TV directly, not through the TV.** An LG's network remote never reaches a box on HDMI, even with SimpLink on (tested). So `internal/appletv` speaks Apple's Companion protocol itself: pairing once with the code on screen, then encrypted commands. It isn't a `tv.TV`: no inputs, no apps yet, different buttons. Details in `docs/appletv.md`.
 - **Computer remote, not a computer agent.** canape presses keys only on the machine it runs on, usually the one streaming to the TV. Controlling another computer would need canape running there too: a background agent fails the Direction filter. Key events need the macOS Accessibility permission (macOS prompts once). Volume uses AppleScript and needs none. Play/pause sends the space bar to the app in front: the media key goes to whatever macOS thinks is playing, often Music, which made web video unreliable in testing. `click` clicks the screen center so a web player gets focus.
@@ -47,6 +48,7 @@ internal/discovery/        network scan (SSDP, mDNS, ARP, reverse DNS, control p
 internal/tv/               tv.TV interface, shared types, key names, Wake-on-LAN, name matching (Match)
 internal/appletv/          Apple TV over Companion: OPACK and TLV8 encodings, SRP pairing, encrypted commands
 internal/tv/lg/            LG driver. app.go installs a web app through Developer Mode (wraps LG's ares CLI)
+internal/tv/android/       Android TV driver: speaks ADB itself (RSA sign-in, shell streams), each action is a shell command
 internal/router/freebox/   Freebox OS API client
 internal/wifi/             Wi-Fi QR payload, the big-QR page, ShowOnTV
 internal/qrcode/           draws any QR: SVG, terminal blocks, PNG

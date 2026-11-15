@@ -13,6 +13,7 @@ import (
 )
 
 type TV struct {
+	Name  string `json:"name"`  // what the user types, e.g. "projector"
 	Brand string `json:"brand"` // driver name, e.g. "lg"
 	IP    string `json:"ip"`
 	MAC   string `json:"mac"` // for Wake-on-LAN
@@ -38,8 +39,11 @@ type Computer struct {
 
 // Home is everything canape knows about one network.
 type Home struct {
-	Name      string     `json:"name"`
-	TV        TV         `json:"tv"`
+	Name string `json:"name"`
+	TVs  []TV   `json:"tvs,omitempty"`
+	// OldTV is the single TV a home held before it could have several.
+	// Load moves it into TVs.
+	OldTV     *TV        `json:"tv,omitempty"`
 	Wifi      Wifi       `json:"wifi"`
 	Freebox   Freebox    `json:"freebox"`
 	Computers []Computer `json:"computers,omitempty"`
@@ -106,10 +110,25 @@ func Load() (*State, error) {
 		s.Homes = map[string]*Home{}
 	}
 	var old Home
-	if json.Unmarshal(b, &old) == nil && (old.TV.Key != "" || old.Wifi.SSID != "" || old.Freebox.AppToken != "") {
+	if json.Unmarshal(b, &old) == nil && (old.OldTV != nil || old.Wifi.SSID != "" || old.Freebox.AppToken != "") {
 		s.Legacy = &old
+		old.moveOldTV()
+	}
+	for _, h := range s.Homes {
+		h.moveOldTV()
 	}
 	return s, nil
+}
+
+func (h *Home) moveOldTV() {
+	if h.OldTV != nil && h.OldTV.Key != "" {
+		if h.OldTV.Brand == "" {
+			h.OldTV.Brand = "lg" // the only brand before brands were saved
+		}
+		h.OldTV.Name = "tv"
+		h.TVs = append(h.TVs, *h.OldTV)
+	}
+	h.OldTV = nil
 }
 
 // moveOld moves a state.json from the old location into ~/.canape and

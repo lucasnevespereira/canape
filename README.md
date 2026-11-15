@@ -22,7 +22,7 @@ No hub to install, nothing to keep running, no network knowledge needed.
   <img src="docs/images/report.png" alt="canape describing a network: Wi-Fi quality, the box, the internet, and every device grouped by kind" width="760">
 </p>
 
-> Early project. The network report works on any Wi-Fi. Control works today with LG webOS TVs, macOS computers and Freebox routers. What's next is in the [roadmap](ROADMAP.md).
+> Early project. The network report works on any Wi-Fi. Control works today with LG webOS TVs, Android TVs, macOS computers and Freebox routers. What's next is in the [roadmap](ROADMAP.md).
 
 ## Quick start
 
@@ -65,7 +65,7 @@ On a new network, start with `canape setup`. Run `canape scan` when you're curio
 
 ## What it does
 
-- **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins.
+- **TV:** on and off, volume, inputs, apps, remote keys, web pages, notifications. `canape tv type` types into the TV, which beats the remote for long logins. A TV in the living room and a projector in the bedroom? Pair both and give them names. Commands go to the one that's on, or name one: `canape tv projector app netflix`.
 - **Apple TV:** play, pause, skip, the remote's arrows and buttons, from your phone or the terminal. Pairs once with the code on its screen.
 - **The computer streaming to the TV:** play, pause, skip back or ahead, volume and full screen on the Mac canape runs on, from your phone. No getting up to pause the movie.
 - **Wi-Fi QR code:** in the terminal, on the TV, or on your phone. Guests scan it and join. canape reads the network name from the router and you type the password once. It never changes your router's settings.
@@ -84,6 +84,7 @@ Home Assistant is a hub: installed once per house, always on, thousands of integ
 |---|---|
 | LG webOS TVs | Supported. Tested on a 2019 LG (webOS 4). [Setup](docs/lg.md) |
 | Apple TV | Supported: remote buttons, play and pause, skip. Tested on an Apple TV 4K. [Notes](docs/appletv.md) |
+| Android TVs and projectors | Supported over network debugging: power off, volume, keys, typing, apps. Tested on an XGIMI Halo+. [Setup](docs/android.md) |
 | Samsung TVs (Tizen) | Detected by `canape scan`. Driver wanted: [adding a TV](docs/adding-a-tv.md) |
 | Sony Bravia TVs | Detected by `canape scan`. Driver wanted |
 | Freebox routers | Supported: device list and Wi-Fi name. Tested on a Pop. [Setup](docs/freebox.md) |
@@ -175,9 +176,9 @@ For Claude Desktop, add this to its config (Settings → Developer → Edit Conf
 { "mcpServers": { "canape": { "command": "/opt/homebrew/bin/canape", "args": ["mcp"] } } }
 ```
 
-Then ask: "put YouTube on the TV", "volume 15", "show the Wi-Fi QR on the TV", "who's on the network?".
+Then ask: "put YouTube on the TV", "volume 15 on the projector", "show the Wi-Fi QR on the TV", "who's on the network?".
 
-Tools: `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `appletv_key`, `appletv_skip`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
+Tools: `tv_list`, `tv_status`, `tv_power`, `tv_volume`, `tv_mute`, `tv_input`, `tv_launch_app`, `tv_open_url`, `tv_press_key`, `tv_type_text`, `tv_notify`, `appletv_key`, `appletv_skip`, `computer_key`, `computer_type_text`, `wake_computer`, `wifi_show_on_tv`, `network_devices`. Claude never sees your Wi-Fi password: `wifi_show_on_tv` only puts the QR on the TV.
 
 ## Several homes
 
@@ -217,6 +218,7 @@ The Freebox still lists canape as an app with access: remove it in Freebox OS, u
 ## More
 
 - [docs/lg.md](docs/lg.md): LG setup, fewer ads on the home screen, a Wi-Fi app for the TV, how canape talks to the TV
+- [docs/android.md](docs/android.md): turning on network debugging, what works on Android TV
 - [docs/freebox.md](docs/freebox.md): Freebox pairing and permissions
 - [docs/discovery.md](docs/discovery.md): finding devices by hand
 - [docs/adding-a-tv.md](docs/adding-a-tv.md): add support for another TV brand

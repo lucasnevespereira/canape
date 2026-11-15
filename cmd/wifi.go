@@ -32,7 +32,11 @@ func wifiCommand(args []string) error {
 		return errors.New("no Wi-Fi saved for this network. Run: canape setup")
 	}
 	if len(args) > 0 && args[0] == "tv" {
-		t, err := s.ConnectTV()
+		name := ""
+		if len(args) > 1 {
+			name = args[1]
+		}
+		t, err := s.ConnectTV(name)
 		if err != nil {
 			return err
 		}
